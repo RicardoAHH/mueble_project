@@ -28,14 +28,14 @@ export default function Header() {
     };
   }, [isMenuOpen]);
   return (
-    <header className="bg-white shadow-md fixed w-full top-0 z-50">
+    <header className="bg-[#aca5a2] shadow-md fixed w-full top-0 z-50">
       <div className="  px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to='/'>
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#431f0a] rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">M</span>
                 </div>
                 <span className="ml-2 text-xl font-bold text-gray-900">MuebleHogar</span>
@@ -69,9 +69,9 @@ export default function Header() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               ref={menuButtonRef}
-              className="flex items-center text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium "
+              className="flex items-center text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-md font-bold "
             >
-              <svg className="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-7 w-7 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
               Menú
@@ -81,24 +81,28 @@ export default function Header() {
 
               <div ref={menuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg  z-50 flex flex-col">
                 <Link to="/" className="flex items-center justify-center">
-                  <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-blue-600">
+                  <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Inicio
                   </button>
                 </Link>
-                <button className="hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-blue-600">
-                  Nosotros
-                </button>
-                <button className="hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-blue-600">
+                <Link to="/about" className="flex items-center justify-center">
+                  <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                    Nosotros
+                  </button>
+                </Link>
+                <button className="hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                   Contacto
                 </button>
                 <Link to="/products" className="flex items-center justify-center">
-                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-blue-600">
+                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Catalogo
                   </button>
                 </Link>
-                <button className="hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-blue-600">
-                  Cotizaciones
-                </button>
+                <Link to='/quotes' className="flex items-center justify-center">
+                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                    Cotizaciones
+                  </button>
+                </Link>
               </div>
             )}
           </div>
@@ -114,7 +118,7 @@ export default function Header() {
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              <span className="ml-1 hidden sm:block">Login</span>
+              <span className="ml-1 hidden sm:block">Iniciar sesión</span>
             </button>
             <button className="flex items-center text-gray-700 hover:text-blue-600 relative mx-5">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

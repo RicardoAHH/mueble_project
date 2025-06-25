@@ -9,7 +9,7 @@ export default function ProductInfo() {
         <div className="product-info-container  w-[100%] bg-white p-6 md:p-8 rounded-lg shadow-xl  mx-auto">
             {/* Sección de Categoría y Nombre del Producto */}
             <div className="mb-6">
-                <h1 className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-1">
+                <h1 className="text-sm font-semibold text-[#a40202] uppercase tracking-wide mb-1">
                     Categoría
                 </h1>
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">
@@ -36,10 +36,10 @@ export default function ProductInfo() {
                     <strong className="font-semibold text-gray-800">Materiales:</strong> Madera de roble macizo, tapizado de lino.
                 </p>
             </div>
-            <div className='flex justify-around'>
+            <div className='flex max-lg:flex-col justify-around'>
                 {/* Precio */}
-                <div className="flex items-baseline justify-between mb-6">
-                    <span className="text-4xl font-extrabold text-blue-700">
+                <div className="flex items-baseline justify-center mb-6">
+                    <span className="text-4xl font-extrabold text-[#a40202]">
                         $1,299.00
                     </span>
                     {/* Aquí puedes añadir, por ejemplo, un precio anterior tachado o un descuento */}
@@ -87,12 +87,13 @@ export default function ProductInfo() {
                         -
                     </button>
                     <input
-                        type="number"
+                        type="text"
                         id="quantity"
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                         className="w-16 text-center border-x border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
                         min="1"
+                        readOnly
                     />
                     <button
                         onClick={() => setQuantity(prev => prev + 1)}
@@ -103,7 +104,7 @@ export default function ProductInfo() {
                     </button>
                 </div>
 
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105 w-full sm:w-auto">
+                <button className="flex-1 bg-[#431f0a] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105 w-full sm:w-auto">
                     Agregar al Carrito
                 </button>
             </div >

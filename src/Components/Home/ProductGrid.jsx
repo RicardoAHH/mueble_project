@@ -36,7 +36,7 @@ export default function ProductGrid({ products, categories, selectedCategory }) 
         ))}
       </div>
       <Link to='/products' className="flex items-center justify-center">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 mt-5">
+        <button className="bg-[#431f0a] hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 mt-5">
           Ver Catálogo completo
         </button>
       </Link>

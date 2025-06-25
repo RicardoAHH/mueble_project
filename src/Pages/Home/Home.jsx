@@ -11,7 +11,7 @@ function App() {
     const [selectedCategory, setSelectedCategory] = useState("Categoria1")
 
     return (
-        <div className="min-h-screen bg-[#d8d6d6]">
+        <div className="min-h-screen bg-[#F8F5EE]">
 
 
             {/* Carrusel */}
@@ -36,8 +36,7 @@ function App() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <Footer />
+
         </div>
     )
 }

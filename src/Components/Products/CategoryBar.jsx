@@ -58,7 +58,7 @@ export default function CategoryBar({ categories, selectedCategory, setSelectedC
                                 key={category.id}
                                 onClick={() => handleCategoryClick(category.id)} // Usa el mismo handler para consistencia
                                 className={` flex items-center px-6 xl:px-10 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-105 ${selectedCategory === category.id
-                                    ? "bg-blue-600 text-white shadow-lg"
+                                    ? "bg-[#4a0505] text-white shadow-lg"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                                     }`}
                             >

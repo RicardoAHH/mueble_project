@@ -8,7 +8,7 @@ export default function Products() {
     const [selectedCategory, setSelectedCategory] = useState("Categoria1")
     return (
         <>
-            <div className='flex flex-col justify-center items-center'>
+            <div className='flex flex-col justify-center items-center bg-[#F8F5EE]'>
                 <div className='w-[80%]'>
                     <CategoryBar
                         categories={categories}
