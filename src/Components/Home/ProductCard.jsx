@@ -1,5 +1,5 @@
 import { Link } from "react-router"
-export default function ProductCard({ product, key }) {
+export default function ProductCard({ product }) {
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105">

@@ -1,14 +1,61 @@
 "use client"
 
-import { useState } from "react"
-import Carousel from "../../Components/Home/Carousel"
-import CategorySidebar from "../../Components/Home/CategorySidebar"
-import ProductGrid from "../../Components/Home/ProductGrid"
-import Footer from "../../Components/Home/Footer"
-import { categories, products } from "../../data/products"
+import React, { useState, useEffect } from "react";
+import axios from 'axios';
+import Carousel from "../../Components/Home/Carousel";
+import CategorySidebar from "../../Components/Home/CategorySidebar";
+import ProductGrid from "../../Components/Home/ProductGrid";
+import Footer from "../../Components/Home/Footer";
+import { categories } from "../../data/products";
+import { products } from "../../data/products";
+import WPbutton from "../../Components/Home/WPbutton";
 
 function App() {
     const [selectedCategory, setSelectedCategory] = useState("Categoria1")
+
+    // const [productsData, setProductsData] = useState([]);
+    // const [loading, setLoading] = useState(true);
+    // const [error, setError] = useState(null);
+
+    // useEffect(() => {
+    //     const fetchProducts = async () => {
+    //         try {
+    //             setLoading(true);
+    //             setError(null);
+    //             const response = await axios.get('http://localhost:3000/api/v1/products');
+    //             setProductsData(response.data);
+    //         } catch (err) {
+    //             console.error("Error al cargar los productos:", err);
+    //             if (err.response && err.response.data && err.response.data.message) {
+    //                 setError(`Error: ${err.response.data.message}`);
+    //             } else {
+    //                 setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
+    //             }
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+
+    //     fetchProducts();
+    // }, []);
+
+    // if (loading) {
+    //     return (
+    //         <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
+    //             <p className="text-gray-700 text-lg">Cargando productos...</p>
+    //         </div>
+    //     );
+    // }
+
+    // if (error) {
+    //     return (
+    //         <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
+    //             <p className="text-red-600 text-lg text-center p-4 rounded-md bg-red-100 border border-red-300 mx-auto max-w-sm">
+    //                 {error}
+    //             </p>
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="min-h-screen bg-[#F8F5EE]">
@@ -32,6 +79,9 @@ function App() {
                     {/* Productos (derecha) */}
                     <div className="lg:col-span-3">
                         <ProductGrid products={products} categories={categories} selectedCategory={selectedCategory} />
+                    </div>
+                    <div className="fixed right-10 bottom-10">
+                        <WPbutton />
                     </div>
                 </div>
             </section>

@@ -69,12 +69,10 @@ export default function Header() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               ref={menuButtonRef}
-              className="flex items-center text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-md font-bold "
-            >
-              <svg className="h-7 w-7 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              Menú
+              className="flex items-center gap-5 text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-md font-bold "
+            >Menú
+              <img src="/public/pngwing.com (2).png" alt="menu" className="w-[20px]" />
+
             </button>
 
             {isMenuOpen && (
