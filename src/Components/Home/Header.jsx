@@ -88,9 +88,11 @@ export default function Header() {
                     Nosotros
                   </button>
                 </Link>
-                <button className="hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
-                  Contacto
-                </button>
+                <Link to='/contacts' className="flex items-center justify-center">
+                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                    Contacto
+                  </button>
+                </Link>
                 <Link to="/products" className="flex items-center justify-center">
                   <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Catalogo

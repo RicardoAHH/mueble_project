@@ -11,6 +11,8 @@ import About from './Pages/About/About'
 import LoginAdmin from './Pages/LoginAdmin/LoginAdmin'
 import ControlAdmin from './Pages/ControlAdmin/ControlAdmin'
 import PrivateRoutes from './Components/LoginAdmin/PrivateRoutes'
+import WPbutton from './Components/Home/WPbutton'
+import Contacts from './Pages/Contact/Contacts'
 
 
 function App() {
@@ -25,15 +27,17 @@ function App() {
         <Route path="/products/:id" element={<ProductDetailCard />} />
         <Route path="/quotes" element={<QuoteForm />} />
         <Route path="/about" element={<About />} />
+        <Route path="/contacts" element={<Contacts />} />
         <Route path="/26062025" element={<LoginAdmin />} />
-        <Route element={<PrivateRoutes />}>
-          {/* La ruta "/26062025/admin" ahora está protegida.
-              Solo se renderizará <ControlAdmin /> si PrivateRoutes lo permite (si hay token). */}
+        <Route path="/26062025/admin" element={<ControlAdmin />} />
+        {/* < Route element={< PrivateRoutes />}>
           <Route path="/26062025/admin" element={<ControlAdmin />} />
-          {/* Si tienes más rutas de administración (ej. /26062025/admin/productos),
-              las pondrías aquí como rutas anidadas dentro de PrivateRoutes. */}
-        </Route>
+        </Route > */}
+
       </Routes>
+      <div className="fixed right-10 bottom-10">
+        <WPbutton />
+      </div>
       {/* Footer */}
       <Footer />
     </>
@@ -41,3 +45,4 @@ function App() {
 }
 
 export default App
+

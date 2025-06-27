@@ -13,9 +13,65 @@ import WPbutton from "../../Components/Home/WPbutton";
 function App() {
     const [selectedCategory, setSelectedCategory] = useState("Categoria1")
 
-    // const [productsData, setProductsData] = useState([]);
-    // const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState(null);
+    const [productsData, setProductsData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const token = localStorage.getItem('authToken');
+
+                if (!token) {
+                    throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
+                }
+                const headers = {
+                    'Authorization': `${token}`
+                };
+
+
+                const response = await axios.get('http://localhost:3000/api/v1/products', { headers });
+                setProductsData(response.data);
+            } catch (err) {
+                console.error("Error al cargar los productos:", err);
+                if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
+                    setError(err.message);
+                } else if (err.response && err.response.status === 401) {
+                    setError("Acceso no autorizado. Tu sesión puede haber expirado. Por favor, vuelve a iniciar sesión.");
+                } else if (err.response && err.response.data && err.response.data.message) {
+                    setError(`Error del servidor: ${err.response.data.message}`);
+                } else {
+                    setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
+                <p className="text-gray-700 text-lg">Cargando productos...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
+                <p className="text-red-600 text-lg text-center p-4 rounded-md bg-red-100 border border-red-300 mx-auto max-w-sm">
+                    {error}
+                </p>
+            </div>
+        );
+    }
+
+    console.log(productsData)
 
     // useEffect(() => {
     //     const fetchProducts = async () => {
@@ -80,9 +136,7 @@ function App() {
                     <div className="lg:col-span-3">
                         <ProductGrid products={products} categories={categories} selectedCategory={selectedCategory} />
                     </div>
-                    <div className="fixed right-10 bottom-10">
-                        <WPbutton />
-                    </div>
+
                 </div>
             </section>
 
@@ -92,3 +146,4 @@ function App() {
 }
 
 export default App
+
