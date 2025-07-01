@@ -63,7 +63,7 @@ export default function CategoryBar({ categories, selectedCategory, setSelectedC
             {/* Aquí asumimos que la barra principal está diseñada para escritorio */}
             <div className="bg-white w-full rounded-lg shadow-md py-4 hidden lg:block">
                 <div className="flex flex-col">
-                    <h3 className="text-xl font-bold text-gray-900 mx-6 mb-4">Categorías</h3>
+                    <h3 className="text-xl text-center font-bold text-gray-900 mx-6 mb-4">Categorías</h3>
                     <div className="space-y-0 flex flex-wrap justify-around">
                         {/* Mapea las categorías dinámicas, SIN la opción "Todos los Productos" */}
                         {displayCategories.map((category) => (

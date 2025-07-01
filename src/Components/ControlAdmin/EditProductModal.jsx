@@ -1,10 +1,9 @@
-// src/components/Admin/EditProductModal.jsx
+
 import React, { useState, useEffect } from 'react';
 
 // Importa tu función de actualización
 import { updateProduct } from '../../libs/axios/updateProduct';
-// Asegúrate de tener tu instancia de axios configurada con interceptores para el token
-// import instance from '../../libs/axios'; 
+
 
 const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
     // Estado local para los datos del formulario de edición
@@ -23,7 +22,7 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
         if (product) {
             setFormData({
                 name: product.name || '',
-                price: product.price ? parseFloat(product.price).toFixed(2) : '', // Asegúrate de que el precio sea numérico
+                price: product.price ? parseFloat(product.price).toFixed(2) : '',
                 description: product.description || '',
                 images: product.images || [], // Asume que images es un array de URLs
                 category_id: product.category_id || '',
@@ -37,9 +36,6 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
     };
 
     const handleImageChange = (e) => {
-        // Aquí podrías manejar la subida de nuevas imágenes.
-        // Por ahora, solo es un campo de texto si las imágenes son URLs.
-        // Si necesitas subir archivos, la lógica será más compleja (FormData, etc.)
         const value = e.target.value;
         setFormData(prev => ({ ...prev, images: value.split(',').map(img => img.trim()) }));
     };
@@ -50,7 +46,6 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
         setError(null);
 
         try {
-            // Asegúrate de enviar los datos en el formato correcto que espera tu backend
             const payload = {
                 name: formData.name,
                 price: parseFloat(formData.price), // Convertir a número antes de enviar

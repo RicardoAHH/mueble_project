@@ -25,7 +25,7 @@ const ProductGallery = ({ images }) => {
             {/* Área de la foto principal */}
             <div className="main-image-area mb-4">
                 <img
-                    src={mainImage}
+                    src={mainImage ? mainImage : images[0]}
                     alt="Producto principal"
                     className="w-full bg-white h-96 object-contain cursor-pointer rounded-xl shadow-md"
                     onClick={handleMainImageClick}

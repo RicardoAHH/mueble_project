@@ -49,7 +49,7 @@ export default function Carousel() {
               <h2 className="text-4xl md:text-6xl font-bold mb-4">{image.title}</h2>
               <p className="text-xl md:text-2xl mb-8">{image.subtitle}</p>
               <Link to='/products'>
-                <button className="bg-[#431f0a] hover:bg-blue-700 text-white border-1 border-white/10 font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105">
+                <button className="bg-[#431f0a] hover:bg-blue-900 text-white border-1 border-white/10 font-bold py-3 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105">
                   Ver Catálogo
                 </button>
               </Link>

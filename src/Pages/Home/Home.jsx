@@ -5,7 +5,7 @@ import CategorySidebar from "../../Components/Home/CategorySidebar";
 import ProductGrid from "../../Components/Home/ProductGrid";
 
 function App() {
-    const [selectedCategory, setSelectedCategory] = useState(null)
+    const [selectedCategory, setSelectedCategory] = useState(null);
     const [dynamicCategories, setDynamicCategories] = useState([]);
     const [productsData, setProductsData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,38 +16,26 @@ function App() {
             try {
                 setLoading(true);
                 setError(null);
-                const token = localStorage.getItem('authToken');
 
-                if (!token) {
-                    throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
-                }
-                const headers = {
-                    'Authorization': `${token}`
-                };
+                const response = await axios.get('http://localhost:3000/api/v1/products');
 
-
-                const response = await axios.get('http://localhost:3000/api/v1/products', { headers });
                 setProductsData(response.data);
                 const uniqueCategoryIds = [...new Set(response.data.map(product => product.category_id))];
                 const derivedCategories = [
 
                     ...uniqueCategoryIds.map(id => ({
                         id: id,
-                        name: `Categoría ${id}` // Puedes mejorar este nombre si tienes un mapeo de IDs a nombres
+                        name: `Categoría ${id}`
                     }))
                 ];
                 setDynamicCategories(derivedCategories);
-                // Si aún no hay una categoría seleccionada, establece "Todos los Productos" como predeterminada
+
                 if (selectedCategory === null) {
                     setSelectedCategory(null);
                 }
             } catch (err) {
                 console.error("Error al cargar los productos:", err);
-                if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
-                    setError(err.message);
-                } else if (err.response && err.response.status === 401) {
-                    setError("Acceso no autorizado. Tu sesión puede haber expirado. Por favor, vuelve a iniciar sesión.");
-                } else if (err.response && err.response.data && err.response.data.message) {
+                if (err.response && err.response.data && err.response.data.message) {
                     setError(`Error del servidor: ${err.response.data.message}`);
                 } else {
                     setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
@@ -58,15 +46,13 @@ function App() {
         };
 
         fetchProducts();
-    }, []);
+    }, []); // Dependencias: no necesitas `selectedCategory` si solo lo seteas a null
 
     const filteredProducts = useMemo(() => {
         if (!productsData) return [];
-
-        if (selectedCategory === null) { // Si selectedCategory es null, muestra todos
+        if (selectedCategory === null) {
             return productsData;
         }
-        // Filtra los productos por category_id
         return productsData.filter(product => product.category_id === selectedCategory);
     }, [productsData, selectedCategory]);
 
@@ -88,18 +74,16 @@ function App() {
         );
     }
 
-    console.log(productsData)
-
-
+    console.log(productsData);
     return (
-        <div className="min-h-screen bg-[#F8F5EE]">
+        <div className="pt-15 min-h-screen bg-[#F8F5EE]">
 
 
             {/* Carrusel */}
             <Carousel />
 
             {/* Sección principal con categorías y productos */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <section className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* Categorías (izquierda) */}
                     <div className="lg:col-span-1">

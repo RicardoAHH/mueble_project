@@ -40,7 +40,7 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
                 key={category.id}
                 onClick={() => handleCategoryClick(category.id)} // Usa el nuevo handler
                 className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-105 ${selectedCategory === category.id
-                  ? "bg-blue-600 text-white shadow-lg"
+                  ? "bg-[#431f0a] text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                   }`}
               >
@@ -63,7 +63,7 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
                 onClick={() => handleCategoryClick(category.id)} // Usa el mismo handler para consistencia
                 className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-105 ${selectedCategory === category.id
                   ? "bg-[#431f0a] text-white shadow-lg"
-                  : "bg-[#aca5a2] text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-blue-900 hover:text-white hover:shadow-md"
                   }`}
               >
                 <span className="mr-3 text-lg">{category.icon}</span>

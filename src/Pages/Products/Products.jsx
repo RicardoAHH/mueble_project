@@ -19,15 +19,7 @@ export default function Products() {
                 setLoading(true);
                 setError(null);
 
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
-                }
-                const headers = {
-                    'Authorization': `${token}`
-                };
-
-                const response = await axios.get('http://localhost:3000/api/v1/products', { headers });
+                const response = await axios.get('http://localhost:3000/api/v1/products');
 
                 // Asegúrate de guardar TODOS los productos aquí
                 setAllProductsData(response.data);
@@ -46,11 +38,7 @@ export default function Products() {
 
             } catch (err) {
                 console.error("Error al cargar los productos:", err);
-                if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
-                    setError(err.message);
-                } else if (err.response && err.response.status === 401) {
-                    setError("Acceso no autorizado. Tu sesión puede haber expirado. Por favor, vuelve a iniciar sesión.");
-                } else if (err.response && err.response.data && err.response.data.message) {
+                if (err.response && err.response.data && err.response.data.message) {
                     setError(`Error del servidor: ${err.response.data.message}`);
                 } else {
                     setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
@@ -80,7 +68,7 @@ export default function Products() {
     return (
         <>
             <div className='flex flex-col justify-center items-center bg-[#F8F5EE]'>
-                <div className='w-[80%]'>
+                <div className='w-[80%] pt-20'>
                     <CategoryBar
                         categories={dynamicCategories}
                         selectedCategory={selectedCategory} // Se pasa el 1 (o el que sea por defecto)
