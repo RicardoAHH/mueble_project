@@ -3,6 +3,7 @@ import PanelControl from '../../Components/ControlAdmin/PanelControl';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import ProductTable from '../../Components/ControlAdmin/ProductTable';
+import AddProductForm from '../../Components/ControlAdmin/AddProductForm';
 
 export default function ControlAdmin() {
     const [productsData, setProductsData] = useState([]);
@@ -100,7 +101,7 @@ export default function ControlAdmin() {
                 return (
                     <div className='w-full p-4'>
                         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Formulario para Adicionar Producto</h2>
-
+                        <AddProductForm />
                         <p className="text-gray-600">Formulario para agregar un nuevo producto...</p>
                     </div>
                 );
@@ -132,7 +133,7 @@ export default function ControlAdmin() {
         <>
             <div className='pt-30'>ControlAdmin</div>
             <div className='flex'>
-                <div className='border-1 w-[30%] h-screen flex justify-center'>
+                <div className='border-1 w-[350px]  flex justify-center'>
                     <PanelControl
                         onShowProducts={handleShowProductsClick}
                         onAddProduct={handleAddProductClick}
@@ -140,7 +141,7 @@ export default function ControlAdmin() {
                         onShowQuotes={handleShowQuotesClick}
                     />
                 </div>
-                <div className='border-1 w-[70%] h-screen'>
+                <div className='w-full'>
                     {renderContentView()}
                 </div>
             </div>

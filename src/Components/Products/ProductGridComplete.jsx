@@ -1,7 +1,12 @@
-import ProductCard from "../Home/ProductCard"
+import React from 'react';
+import ProductCard from "../Home/ProductCard"; // Asegúrate de que la ruta sea correcta
 
 export default function ProductGridComplete({ products, categories, selectedCategory }) {
-  const selectedCategoryName = categories.find((cat) => cat.id === selectedCategory)?.name
+  // Encuentra el nombre de la categoría seleccionada para mostrar en el título.
+  // selectedCategory puede ser 'null' para 'Todos los Productos'.
+  const selectedCategoryObject = categories.find((cat) => cat.id === selectedCategory);
+  // Si no se encuentra (ej. selectedCategory es null), muestra "Todos los Productos"
+  const selectedCategoryName = selectedCategoryObject ? selectedCategoryObject.name : "Categoria 1";
 
   return (
     <div>
@@ -29,11 +34,18 @@ export default function ProductGridComplete({ products, categories, selectedCate
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {products[selectedCategory]?.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products.length > 0 ? ( // Verifica si hay productos antes de mapear
+          products.map((product) => ( // <--- ¡AQUÍ ESTÁ LA CLAVE! Iteramos directamente sobre el array 'products'
+            <ProductCard key={product.id} product={product} />
+          ))
+        ) : (
+          <p className="col-span-full text-center text-gray-600 text-lg py-10">
+            No hay productos en esta categoría.
+          </p>
+        )}
       </div>
+
     </div>
-  )
+  );
 }

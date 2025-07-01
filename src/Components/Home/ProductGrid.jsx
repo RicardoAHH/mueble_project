@@ -2,7 +2,8 @@ import ProductCard from "./ProductCard"
 import { Link } from "react-router"
 
 export default function ProductGrid({ products, categories, selectedCategory }) {
-  const selectedCategoryName = categories.find((cat) => cat.id === selectedCategory)?.name
+  const selectedCategoryObject = categories.find((cat) => cat.id === selectedCategory);
+  const selectedCategoryName = selectedCategoryObject ? selectedCategoryObject.name : "Todos los Productos";
 
   return (
     <div>
@@ -31,7 +32,7 @@ export default function ProductGrid({ products, categories, selectedCategory }) 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {products[selectedCategory]?.slice(0, 6).map((product) => (
+        {products.slice(0, 6).map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>

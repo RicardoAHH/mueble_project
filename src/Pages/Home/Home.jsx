@@ -1,18 +1,12 @@
-"use client"
-
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from 'axios';
 import Carousel from "../../Components/Home/Carousel";
 import CategorySidebar from "../../Components/Home/CategorySidebar";
 import ProductGrid from "../../Components/Home/ProductGrid";
-import Footer from "../../Components/Home/Footer";
-import { categories } from "../../data/products";
-import { products } from "../../data/products";
-import WPbutton from "../../Components/Home/WPbutton";
 
 function App() {
-    const [selectedCategory, setSelectedCategory] = useState("Categoria1")
-
+    const [selectedCategory, setSelectedCategory] = useState(null)
+    const [dynamicCategories, setDynamicCategories] = useState([]);
     const [productsData, setProductsData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -34,6 +28,19 @@ function App() {
 
                 const response = await axios.get('http://localhost:3000/api/v1/products', { headers });
                 setProductsData(response.data);
+                const uniqueCategoryIds = [...new Set(response.data.map(product => product.category_id))];
+                const derivedCategories = [
+
+                    ...uniqueCategoryIds.map(id => ({
+                        id: id,
+                        name: `Categoría ${id}` // Puedes mejorar este nombre si tienes un mapeo de IDs a nombres
+                    }))
+                ];
+                setDynamicCategories(derivedCategories);
+                // Si aún no hay una categoría seleccionada, establece "Todos los Productos" como predeterminada
+                if (selectedCategory === null) {
+                    setSelectedCategory(null);
+                }
             } catch (err) {
                 console.error("Error al cargar los productos:", err);
                 if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
@@ -52,6 +59,16 @@ function App() {
 
         fetchProducts();
     }, []);
+
+    const filteredProducts = useMemo(() => {
+        if (!productsData) return [];
+
+        if (selectedCategory === null) { // Si selectedCategory es null, muestra todos
+            return productsData;
+        }
+        // Filtra los productos por category_id
+        return productsData.filter(product => product.category_id === selectedCategory);
+    }, [productsData, selectedCategory]);
 
     if (loading) {
         return (
@@ -73,45 +90,6 @@ function App() {
 
     console.log(productsData)
 
-    // useEffect(() => {
-    //     const fetchProducts = async () => {
-    //         try {
-    //             setLoading(true);
-    //             setError(null);
-    //             const response = await axios.get('http://localhost:3000/api/v1/products');
-    //             setProductsData(response.data);
-    //         } catch (err) {
-    //             console.error("Error al cargar los productos:", err);
-    //             if (err.response && err.response.data && err.response.data.message) {
-    //                 setError(`Error: ${err.response.data.message}`);
-    //             } else {
-    //                 setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
-    //             }
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     fetchProducts();
-    // }, []);
-
-    // if (loading) {
-    //     return (
-    //         <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
-    //             <p className="text-gray-700 text-lg">Cargando productos...</p>
-    //         </div>
-    //     );
-    // }
-
-    // if (error) {
-    //     return (
-    //         <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center">
-    //             <p className="text-red-600 text-lg text-center p-4 rounded-md bg-red-100 border border-red-300 mx-auto max-w-sm">
-    //                 {error}
-    //             </p>
-    //         </div>
-    //     );
-    // }
 
     return (
         <div className="min-h-screen bg-[#F8F5EE]">
@@ -126,7 +104,7 @@ function App() {
                     {/* Categorías (izquierda) */}
                     <div className="lg:col-span-1">
                         <CategorySidebar
-                            categories={categories}
+                            categories={dynamicCategories}
                             selectedCategory={selectedCategory}
                             setSelectedCategory={setSelectedCategory}
                         />
@@ -134,7 +112,7 @@ function App() {
 
                     {/* Productos (derecha) */}
                     <div className="lg:col-span-3">
-                        <ProductGrid products={products} categories={categories} selectedCategory={selectedCategory} />
+                        <ProductGrid products={filteredProducts} categories={dynamicCategories} selectedCategory={selectedCategory} />
                     </div>
 
                 </div>
@@ -146,4 +124,3 @@ function App() {
 }
 
 export default App
-
