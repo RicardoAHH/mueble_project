@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import ProductTable from '../../Components/ControlAdmin/ProductTable';
 import AddProductForm from '../../Components/ControlAdmin/AddProductForm';
+import { getQuotes, updateQuoteStatus } from '../../libs/axios/quotes';
+import QuoteTable from '../../Components/ControlAdmin/quoteTable';
 
 export default function ControlAdmin() {
     const [productsData, setProductsData] = useState([]);
+    const [quotesData, setQuotesData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [activeView, setActiveView] = useState(null);
@@ -43,8 +46,81 @@ export default function ControlAdmin() {
         }
     }, []);
 
+    // --- Nueva función para obtener cotizaciones ---
+    const fetchQuotes = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const token = localStorage.getItem('authToken');
+
+            if (!token) {
+                throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
+            }
+            // Tu `getQuotes` hook ya debería incluir el token en la instancia de Axios si la configuraste así.
+            // Si no, puedes modificar `getQuotes` o pasar el token aquí.
+            // Asumiendo que `instance` en `quotes.js` ya maneja el token:
+            const { data, status } = await getQuotes(); // Llama a tu hook de Axios
+
+            if (status === 200) {
+                setQuotesData(data);
+                setActiveView('quotes');
+            } else {
+                setError(`Error al cargar cotizaciones: Código de estado ${status}`);
+            }
+
+        } catch (err) {
+            console.error("Error al cargar las cotizaciones:", err);
+            let errorMessage = "No se pudieron cargar las cotizaciones. Inténtalo de nuevo más tarde.";
+
+            if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
+                errorMessage = err.message;
+            } else if (err.response) {
+                if (err.response.status === 401 || err.response.status === 403) {
+                    errorMessage = "Acceso no autorizado. Tu sesión puede haber expirado o no tienes permisos. Por favor, vuelve a iniciar sesión.";
+                } else if (err.response.data && err.response.data.message) {
+                    errorMessage = `Error del servidor: ${err.response.data.message}`;
+                }
+            } else if (err.request) {
+                errorMessage = "No se pudo conectar con el servidor para obtener cotizaciones. Verifica tu conexión.";
+            }
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const handleMarkQuoteAsReviewed = useCallback(async (quoteId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Enviamos el nuevo estado como "reviewed"
+            const { data, status } = await updateQuoteStatus(quoteId, "reviewed");
+
+            if (status === 200) {
+                // Actualiza el estado de quotesData para reflejar el cambio
+                setQuotesData(prevQuotes =>
+                    prevQuotes.map(quote =>
+                        quote.id === quoteId ? { ...quote, status: "reviewed" } : quote // Actualiza el campo 'status'
+                    )
+                );
+                alert('Cotización marcada como revisada con éxito.');
+            } else {
+                setError(`Error al actualizar cotización: Código de estado ${status}`);
+            }
+        } catch (err) {
+            console.error("Error al marcar cotización como revisada:", err);
+            let errorMessage = "Hubo un error al marcar la cotización como revisada.";
+            if (err.response) {
+                errorMessage = err.response.data.message || errorMessage;
+            }
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     const handleShowProductsClick = () => {
+        setActiveView('products');
         fetchProducts();
     };
 
@@ -52,12 +128,14 @@ export default function ControlAdmin() {
     const handleAddProductClick = () => {
         setActiveView('addProductForm'); // Por ejemplo, mostrar un formulario
         setProductsData([]);
+        setQuotesData([]);
     };
 
     // Función para manejar el clic en "Mostrar Ventas" 
     const handleShowSalesClick = () => {
         setActiveView('sales'); // Mostrar vista de ventas
         setProductsData([]);
+        setQuotesData([]);
         // Aquí podrías llamar a una función fetchSales()
     };
 
@@ -65,6 +143,7 @@ export default function ControlAdmin() {
     const handleShowQuotesClick = () => {
         setActiveView('quotes'); // Mostrar vista de cotizaciones
         setProductsData([]);
+        fetchQuotes();
         // Aquí podrías llamar a una función fetchQuotes()
     };
 
@@ -116,7 +195,7 @@ export default function ControlAdmin() {
                 return (
                     <div className='w-full p-4'>
                         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Lista de Cotizaciones</h2>
-                        <p className="text-gray-600">Aquí se mostrarán las cotizaciones...</p>
+                        <QuoteTable quotes={quotesData} onMarkAsReviewed={handleMarkQuoteAsReviewed} /> {/* Pasa las cotizaciones al nuevo componente */}
                     </div>
                 );
             default:
@@ -139,6 +218,7 @@ export default function ControlAdmin() {
                         onAddProduct={handleAddProductClick}
                         onShowSales={handleShowSalesClick}
                         onShowQuotes={handleShowQuotesClick}
+
                     />
                 </div>
                 <div className='w-full'>

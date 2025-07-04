@@ -13,7 +13,7 @@ import ControlAdmin from './Pages/ControlAdmin/ControlAdmin'
 import PrivateRoutes from './Components/LoginAdmin/PrivateRoutes'
 import WPbutton from './Components/Home/WPbutton'
 import Contacts from './Pages/Contact/Contacts'
-
+import Login from './Pages/LoginClient/Login'
 
 function App() {
   return (
@@ -29,10 +29,11 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/26062025" element={<LoginAdmin />} />
-        <Route path="/26062025/admin" element={<ControlAdmin />} />
-        {/* < Route element={< PrivateRoutes />}>
+        {/* <Route path="/26062025/admin" element={<ControlAdmin />} /> */}
+        <Route path="/login" element={<Login />} />
+        < Route element={< PrivateRoutes />}>
           <Route path="/26062025/admin" element={<ControlAdmin />} />
-        </Route > */}
+        </Route >
 
       </Routes>
       <div className="fixed right-10 bottom-10">

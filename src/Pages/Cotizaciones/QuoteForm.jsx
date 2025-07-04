@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-
+import { sendQuote } from '../../libs/axios/quotes';
 export default function QuoteForm() {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
         email: '',
         message: '',
-        file: null, // Para almacenar el archivo subido
+        // file: null, // Si tu API de quotes NO maneja archivos directamente en el body, es mejor quitarlo o manejarlo por separado
     });
 
     const [formStatus, setFormStatus] = useState({
@@ -23,65 +23,79 @@ export default function QuoteForm() {
         }));
     };
 
+    // Si tu API no soporta subir archivos con la misma ruta de quotes,
+    // puedes eliminar handleFileChange y el input de tipo file.
+    // Si sí lo soporta, necesitarás ajustar handleSubmit para usar FormData.
+    /*
     const handleFileChange = (e) => {
         setFormData((prevData) => ({
             ...prevData,
             file: e.target.files[0], // Solo tomamos el primer archivo
         }));
     };
+    */
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus({ submitted: true, success: false, message: 'Enviando cotización...' });
 
-        console.log('Datos del formulario:', formData);
+        // Extrae los datos que coinciden con tu definición de QuoteCreate en Swagger
+        // Tu Swagger QuoteCreate solo tiene 'name', 'email', 'phone', 'message'.
+        const { name, email, phone, message } = formData;
+        const dataToSend = { name, email, phone, message };
 
-        // Simular una llamada a la API
         try {
-            // const response = await fetch('/api/send-quote', {
-            //   method: 'POST',
-            //   body: JSON.stringify(formData), // Si no envías archivo, puedes usar JSON.stringify
-            //   headers: {
-            //     'Content-Type': 'application/json',
-            //   },
-            // });
+            const { data, status } = await sendQuote(dataToSend);
 
-            // Si necesitas enviar archivos, usarías FormData:
-            // const dataToSend = new FormData();
-            // for (const key in formData) {
-            //   dataToSend.append(key, formData[key]);
-            // }
-            // const response = await fetch('/api/send-quote', {
-            //   method: 'POST',
-            //   body: dataToSend,
-            // });
-
-
-            // Simulación de respuesta exitosa
-            await new Promise((resolve) => setTimeout(resolve, 1500)); // Simula un retraso de red
-            setFormStatus({
-                submitted: true,
-                success: true,
-                message: '¡Cotización enviada con éxito! Nos pondremos en contacto pronto.',
-            });
-            setFormData({ // Limpia el formulario después del éxito
-                name: '',
-                phone: '',
-                email: '',
-                message: '',
-                file: null,
-            });
-            // Para limpiar visualmente el input de archivo
-            if (document.getElementById('file-upload')) {
-                document.getElementById('file-upload').value = '';
+            if (status === 201) { // 201 Created es el código esperado para una creación exitosa
+                setFormStatus({
+                    submitted: true,
+                    success: true,
+                    message: '¡Cotización enviada con éxito! Nos pondremos en contacto pronto.',
+                });
+                setFormData({ // Limpia el formulario después del éxito
+                    name: '',
+                    phone: '',
+                    email: '',
+                    message: '',
+                    // file: null, // Si mantuviste el campo file, límpialo también aquí
+                });
+                // Para limpiar visualmente el input de archivo (si lo mantuviste)
+                // if (document.getElementById('file-upload')) {
+                //     document.getElementById('file-upload').value = '';
+                // }
+            } else {
+                // Manejar otros códigos de estado exitosos pero no 201 si fuera el caso
+                setFormStatus({
+                    submitted: true,
+                    success: false,
+                    message: `Error inesperado (${status}). Por favor, inténtalo de nuevo.`,
+                });
             }
 
         } catch (error) {
             console.error('Error al enviar la cotización:', error);
+
+            let errorMessage = 'Hubo un error al enviar tu cotización. Por favor, inténtalo de nuevo.';
+
+            // Si es un error de Axios y viene con una respuesta del servidor
+            if (error.response) {
+                // Accede al mensaje de error del backend si existe
+                errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+                console.error('Detalles del error del servidor:', error.response.data);
+                console.error('Código de estado del error:', error.response.status);
+            } else if (error.request) {
+                // La solicitud fue hecha pero no hubo respuesta
+                errorMessage = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión.';
+            } else {
+                // Algo más causó el error
+                errorMessage = error.message || errorMessage;
+            }
+
             setFormStatus({
                 submitted: true,
                 success: false,
-                message: 'Hubo un error al enviar tu cotización. Por favor, inténtalo de nuevo.',
+                message: errorMessage,
             });
         }
     };
@@ -165,50 +179,29 @@ export default function QuoteForm() {
                         ></textarea>
                     </div>
 
-                    {/* Opción para subir archivo */}
+                    {/* Si necesitas un campo de archivo y tu API lo soporta así, descomenta y ajusta: */}
+                    {/*
                     <div>
                         <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-1">
-                            Adjuntar Archivo (Opcional)
+                            Adjuntar archivo (opcional)
                         </label>
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div className="space-y-1 text-center">
-                                <svg
-                                    className="mx-auto h-12 w-12 text-gray-400"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 48 48"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m-4-4v-4m0 4h4m-4-4L28 28m4-4l-3.172-3.172a4 4 0 00-5.656 0L12 28m0 0l-4 4m4-4h4"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                                <div className="flex text-sm text-gray-600">
-                                    <label
-                                        htmlFor="file-upload"
-                                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                    >
-                                        <span>Sube un archivo</span>
-                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} />
-                                    </label>
-                                    <p className="pl-1">o arrástralo y suéltalo aquí</p>
-                                </div>
-                                <p className="text-xs text-gray-500">
-                                    {formData.file ? formData.file.name : 'PNG, JPG, GIF hasta 10MB'}
-                                </p>
-                            </div>
-                        </div>
+                        <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            onChange={handleFileChange}
+                            className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">PDF, JPG, PNG, DOC (max. 5MB)</p>
                     </div>
+                    */}
 
                     {/* Botón de Enviar */}
                     <div>
                         <button
                             type="submit"
                             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-[#431f0a] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 ease-in-out"
-                            disabled={formStatus.submitted && !formStatus.success} // Deshabilita si está enviando y aún no es exitoso
+                            disabled={formStatus.submitted && !formStatus.success}
                         >
                             {formStatus.submitted && !formStatus.success ? 'Enviando...' : 'Solicitar Cotización'}
                         </button>

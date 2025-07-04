@@ -12,7 +12,7 @@ export async function login(body) {
 
 export async function logout() {
     try {
-        const { data, status } = await instance.post('api/v1/auth/logout')
+        const { data, status } = await instance.post('/auth/logout')
         return { data, status }
     } catch (error) {
         throw error

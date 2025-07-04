@@ -71,7 +71,7 @@ export default function Header() {
               ref={menuButtonRef}
               className="flex items-center gap-5 text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-md font-bold "
             >Menú
-              <img src="/public/pngwing.com (2).png" alt="menu" className="w-[20px]" />
+              <img src="/pngwing.com (2).png" alt="menu" className="w-[20px]" />
 
             </button>
 
@@ -109,17 +109,19 @@ export default function Header() {
 
           {/* Login y Carrito */}
           <div className="flex items-center space-x-4">
-            <button className="flex items-center text-gray-700 hover:text-blue-600">
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span className="ml-1 hidden sm:block">Iniciar sesión</span>
-            </button>
+            <Link to='/login'>
+              <button className="flex items-center text-gray-700 hover:text-blue-600">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span className="ml-1 hidden sm:block">Iniciar sesión</span>
+              </button>
+            </Link>
             <button className="flex items-center text-gray-700 hover:text-blue-600 relative mx-5">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
