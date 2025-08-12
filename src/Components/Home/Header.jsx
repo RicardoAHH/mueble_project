@@ -1,35 +1,76 @@
 "use client"
-import { Link } from "react-router";
+import { Link } from "react-router"; // Asegúrate de que estás usando react-router-dom
 import { useState, useEffect, useRef } from "react"
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const menuRef = useRef(null); // Crea una referencia para el div del menú
-  const menuButtonRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Estado para controlar si el usuario está autenticado (basado en localStorage)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Nuevo estado para controlar la visibilidad del menú desplegable del usuario
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
-  const closeMenu = () => {
+  const menuRef = useRef(null); // Ref para el menú principal de navegación
+  const menuButtonRef = useRef(null); // Ref para el botón que abre el menú principal
+
+  const userMenuRef = useRef(null); // Ref para el menú desplegable del usuario
+  const userMenuButtonRef = useRef(null); // Ref para el botón que abre el menú del usuario
+
+  // Función para cerrar el menú principal
+  const closeMainMenu = () => {
     setIsMenuOpen(false);
   };
 
+  // Función para cerrar el menú desplegable del usuario
+  const closeUserDropdown = () => {
+    setIsUserDropdownOpen(false);
+  };
+
+  // Efecto para verificar el token de autenticación al cargar el componente
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []); // Se ejecuta solo una vez al montar el componente
+
+  // Efecto para manejar clics fuera de los menús
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuButtonRef.current && menuButtonRef.current.contains(event.target)) {
-        return;
+      // Lógica para cerrar el menú principal
+      if (menuRef.current && !menuRef.current.contains(event.target) &&
+        menuButtonRef.current && !menuButtonRef.current.contains(event.target)) {
+        closeMainMenu();
       }
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        closeMenu();
+
+      // Lógica para cerrar el menú de usuario
+      // Solo si el menú de usuario está abierto y el clic fue fuera de él o de su botón
+      if (isUserDropdownOpen && userMenuRef.current && !userMenuRef.current.contains(event.target) &&
+        userMenuButtonRef.current && !userMenuButtonRef.current.contains(event.target)) {
+        closeUserDropdown();
       }
     };
-    if (isMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isUserDropdownOpen]); // Agrega isUserDropdownOpen a las dependencias
+
+  // Función para manejar el cierre de sesión
+  const handleLogout = () => {
+    localStorage.removeItem('authToken'); // Elimina el token del localStorage
+    setIsAuthenticated(false); // Actualiza el estado de autenticación
+    closeUserDropdown(); // Cierra el menú desplegable del usuario al cerrar sesión
+    // Opcional: Redirigir al usuario a la página de inicio de sesión o a la página principal
+    // navigate('/login'); // Si usas `useNavigate`
+    window.location.reload(); // Recarga la página para asegurar que el Header se actualice
+  };
+
   return (
     <header className="bg-[#aca5a2] shadow-md fixed w-full top-0 z-50">
-      <div className="  px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to='/'>
@@ -64,20 +105,18 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Menú desplegable */}
-          <div className=" md:block relative">
+          {/* Menú desplegable principal */}
+          <div className="md:block relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               ref={menuButtonRef}
               className="flex items-center gap-5 text-gray-800 hover:text-blue-600 px-3 py-2 rounded-md text-md font-bold "
             >Menú
-              <img src="/pngwing.com (2).png" alt="menu" className="w-[20px]" />
-
+              <img src="https://placehold.co/20x20/000000/FFFFFF?text=Menu" alt="menu" className="w-[20px]" />
             </button>
 
             {isMenuOpen && (
-
-              <div ref={menuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg  z-50 flex flex-col">
+              <div ref={menuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg z-50 flex flex-col">
                 <Link to="/" className="flex items-center justify-center">
                   <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Inicio
@@ -95,7 +134,7 @@ export default function Header() {
                 </Link>
                 <Link to="/products" className="flex items-center justify-center">
                   <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
-                    Catalogo
+                    Catálogo
                   </button>
                 </Link>
                 <Link to='/quotes' className="flex items-center justify-center">
@@ -109,19 +148,65 @@ export default function Header() {
 
           {/* Login y Carrito */}
           <div className="flex items-center space-x-4">
-            <Link to='/login'>
-              <button className="flex items-center text-gray-700 hover:text-blue-600">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                <span className="ml-1 hidden sm:block">Iniciar sesión</span>
-              </button>
-            </Link>
+            {isAuthenticated ? (
+              // Menú desplegable para usuario logeado
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)} // Ahora se togglea el nuevo estado
+                  ref={userMenuButtonRef}
+                  className="flex items-center text-gray-700 hover:text-blue-600"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  <span className="ml-1 hidden sm:block">Mi Cuenta</span>
+                </button>
+                {/* El menú del usuario se muestra si isUserDropdownOpen es true */}
+                {isUserDropdownOpen && (
+                  <div ref={userMenuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg z-50 flex flex-col">
+                    <Link to="/profile" className="flex items-center justify-center">
+                      <button onClick={closeUserDropdown} className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                        Mi cuenta
+                      </button>
+                    </Link>
+                    <Link to="/sales" className="flex items-center justify-center">
+                      <button onClick={closeUserDropdown} className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                        Mis compras
+                      </button>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]"
+                    >
+                      Salir
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Botón "Iniciar sesión" si no está logeado
+              <Link to='/login'>
+                <button
+                  className="flex items-center text-gray-700 hover:text-blue-600"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  <span className="ml-1 hidden sm:block">Iniciar sesión</span>
+                </button>
+              </Link>
+            )}
+
             <button className="flex items-center text-gray-700 hover:text-blue-600 relative mx-5">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

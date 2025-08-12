@@ -14,6 +14,7 @@ import PrivateRoutes from './Components/LoginAdmin/PrivateRoutes'
 import WPbutton from './Components/Home/WPbutton'
 import Contacts from './Pages/Contact/Contacts'
 import Login from './Pages/LoginClient/Login'
+import UserProfile from './Pages/UserProfile/UserProfile'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/26062025" element={<LoginAdmin />} />
+        <Route path="/profile" element={<UserProfile />} />
         {/* <Route path="/26062025/admin" element={<ControlAdmin />} /> */}
         <Route path="/login" element={<Login />} />
         < Route element={< PrivateRoutes />}>

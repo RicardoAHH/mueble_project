@@ -1,9 +1,7 @@
 // src/Pages/AuthPage.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
-// Importa las funciones de tu API
-import { login, register } from '../../libs/axios/auth'; // <--- ¡Importamos aquí!
-
+import { useNavigate } from 'react-router'; // Cambiado a react-router-dom
+import { login, register } from '../../libs/axios/auth';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true); // true para login, false para registro
@@ -18,9 +16,6 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Ya no necesitas la instancia de axios aquí, las funciones importadas la usan
-  // const api = axios.create({ ... });
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -31,15 +26,18 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // Usamos la función 'login' importada
       const { data, status } = await login({
         email: formData.email,
         password: formData.password
       });
 
-      // Asumiendo que tu backend devuelve un token JWT y un mensaje
-      const { token, message: successMessage } = data; // 'data' viene de la respuesta
+      // Asumiendo que tu backend devuelve un token JWT y un objeto 'user' con 'role_id'
+      const { token, message: successMessage, user } = data; // Desestructuramos 'user' también
       localStorage.setItem('authToken', token);
+      // Almacenamos el role_id del usuario en localStorage
+      if (user && user.role_id) {
+        localStorage.setItem('userRole', user.role_id.toString()); // Guarda como string
+      }
       setMessage(successMessage || '¡Inicio de sesión exitoso!');
 
       navigate('/');
@@ -47,7 +45,6 @@ export default function AuthPage() {
 
     } catch (error) {
       console.error('Error durante el inicio de sesión:', error);
-      // El error ya fue re-lanzado por la función 'login', así que lo manejamos aquí
       if (error.response) {
         setMessage(error.response.data.message || 'Error al iniciar sesión. Verifica tus credenciales.');
       } else if (error.request) {
@@ -66,7 +63,6 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // Usamos la función 'register' importada
       const { data, status } = await register({
         name: formData.name,
         lastname: formData.lastName,
@@ -75,13 +71,12 @@ export default function AuthPage() {
         phone: formData.phone
       });
 
-      setMessage(data.message || '¡Registro exitoso! Ya puedes iniciar sesión.'); // 'data' viene de la respuesta
-      setIsLogin(true); // Cambia a la vista de login después del registro
-      setFormData({ ...formData, password: '', name: '', lastName: '', phone: '' }); // Limpia los campos
+      setMessage(data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
+      setIsLogin(true);
+      setFormData({ ...formData, password: '', name: '', lastName: '', phone: '' });
 
     } catch (error) {
       console.error('Error durante el registro:', error);
-      // El error ya fue re-lanzado por la función 'register', así que lo manejamos aquí
       if (error.response) {
         setMessage(error.response.data.message || 'Error al registrar. Intenta con otro correo o revisa los datos.');
       } else if (error.request) {
