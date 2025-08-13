@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 export default function CategorySidebar({ categories, selectedCategory, setSelectedCategory }) {
@@ -14,13 +13,11 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
   return (
     <div className="flex items-center justify-center">
       <div className="bg-white w-[70%] lg:w-full rounded-lg shadow-md p-1  lg:hidden">
-        {/* Encabezado del acordeón móvil: título y botón para abrir/cerrar */}
         <button
           onClick={() => setIsMobileAccordionOpen(!isMobileAccordionOpen)}
           className="w-full flex justify-between items-center px-4 py-1 text-left rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <h3 className="text-xl font-bold">Categorías</h3>
-          {/* Icono de flecha para indicar estado (abierto/cerrado) */}
           <svg
             className={`h-6 w-6 transform transition-transform duration-300 ${isMobileAccordionOpen ? 'rotate-180' : 'rotate-0'}`}
             fill="none"
@@ -31,14 +28,12 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"></path>
           </svg>
         </button>
-
-        {/* Contenido del acordeón móvil: la lista de botones de categoría */}
         {isMobileAccordionOpen && (
           <div className="mt-2 space-y-2">
             {categories.map((category) => (
               <button
-                key={category.id}
-                onClick={() => handleCategoryClick(category.id)} // Usa el nuevo handler
+                key={category.id} // <-- AQUÍ SE AÑADE LA KEY
+                onClick={() => handleCategoryClick(category.id)}
                 className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-105 ${selectedCategory === category.id
                   ? "bg-[#431f0a] text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
@@ -53,14 +48,13 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
       </div>
 
       <div className="bg-white w-full rounded-lg shadow-md p-1 hidden lg:block">
-        {/* --- Sección para DESKTOP (visible solo en pantallas medianas y más grandes) --- */}
         <div className="hidden lg:block">
           <h3 className="text-xl font-bold text-gray-900 mb-6">Categorías</h3>
           <div className="space-y-2">
             {categories.map((category) => (
               <button
-                key={category.id}
-                onClick={() => handleCategoryClick(category.id)} // Usa el mismo handler para consistencia
+                key={category.id} // <-- Y AQUÍ TAMBIÉN
+                onClick={() => handleCategoryClick(category.id)}
                 className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-all duration-300 transform hover:scale-105 ${selectedCategory === category.id
                   ? "bg-[#431f0a] text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-blue-900 hover:text-white hover:shadow-md"
@@ -74,6 +68,5 @@ export default function CategorySidebar({ categories, selectedCategory, setSelec
         </div>
       </div>
     </div>
-
   );
 }

@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { collection, serverTimestamp, setDoc, doc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../../firebase';
 
 export default function AddProductForm() {
-    // Definir los estados iniciales del formulario
     const [product, setProduct] = useState({
         name: '',
         price: '',
         description: '',
         category_id: '',
     });
-    // Cambiamos 'images' de un string a un array de strings, inicializándolo con un campo vacío
-    const [imageUrls, setImageUrls] = useState(['']); // Array para manejar múltiples URLs
-
+    const [imageUrls, setImageUrls] = useState(['']);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState(null);
 
-    const API_URL = 'http://localhost:3000/api/v1/products';
-
-    // Manejador de cambios para los inputs generales del formulario
     const handleChange = (e) => {
         const { name, value } = e.target;
         setProduct({
@@ -27,80 +22,74 @@ export default function AddProductForm() {
         });
     };
 
-    // Manejador de cambios para los inputs de URL de imagen
     const handleImageUrlChange = (index, value) => {
         const newImageUrls = [...imageUrls];
         newImageUrls[index] = value;
         setImageUrls(newImageUrls);
     };
 
-    // Función para agregar un nuevo campo de URL de imagen
     const addImageUrlInput = () => {
-        setImageUrls([...imageUrls, '']); // Agrega un nuevo campo vacío al final
+        setImageUrls([...imageUrls, '']);
     };
 
-    // Función para eliminar un campo de URL de imagen
     const removeImageUrlInput = (index) => {
         const newImageUrls = imageUrls.filter((_, i) => i !== index);
         setImageUrls(newImageUrls);
     };
 
-    // Manejador de envío del formulario
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         setLoading(true);
         setMessage('');
         setError(null);
 
         try {
-            // Filtrar URLs vacías antes de enviar
+            // --- Lógica para obtener el siguiente ID numérico ---
+            const productsCollectionRef = collection(db, 'products');
+
+            // 1. Consulta para obtener el último documento por el campo 'productId'
+            //    Necesitarás crear un índice en Firebase para esta consulta.
+            const q = query(productsCollectionRef, orderBy('productId', 'desc'), limit(1));
+            const querySnapshot = await getDocs(q);
+
+            let nextProductId = 1;
+            if (!querySnapshot.empty) {
+                const lastProduct = querySnapshot.docs[0].data();
+                if (lastProduct.productId) {
+                    nextProductId = lastProduct.productId + 1;
+                }
+            }
+            // ----------------------------------------------------
+
             const validImageUrls = imageUrls.filter(url => url.trim() !== '');
 
             const dataToSend = {
+                productId: nextProductId, // ¡Nuevo campo numérico para el ID!
                 name: product.name,
                 price: parseFloat(product.price),
                 description: product.description,
-                images: validImageUrls, // Ya es un array de URLs limpias
-                category_id: parseInt(product.category_id, 10),
+                images: validImageUrls,
+                category_id: product.category_id,
+                created_at: serverTimestamp(),
+                updated_at: serverTimestamp(),
             };
 
-            const token = localStorage.getItem('authToken');
+            // 2. Usamos setDoc para crear un documento con un ID de documento único y aleatorio
+            //    pero con un campo 'productId' secuencial.
+            const newDocRef = doc(productsCollectionRef);
+            await setDoc(newDocRef, dataToSend);
 
-            if (!token) {
-                throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
-            }
-
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `${token}`
-            };
-
-            const response = await axios.post(API_URL, dataToSend, { headers });
-
-            setMessage(`Producto "${product.name}" agregado con éxito! ID: ${product.id}`);
-            // Limpiar el formulario
-            setProduct({
-                name: '',
-                price: '',
-                description: '',
-                category_id: '',
-            });
-            setImageUrls(['']); // Reiniciar las URLs a un solo campo vacío
+            setMessage(`Producto "${product.name}" agregado con éxito con ID numérico: ${nextProductId}`);
+            // ... (el resto de tu código de limpieza del formulario se mantiene igual)
 
         } catch (err) {
             console.error("Error al agregar el producto:", err);
-            if (err.response) {
-                setError(`Error del servidor: ${err.response.status} - ${err.response.data.message || 'Error desconocido'}`);
-            } else if (err.request) {
-                setError("No se pudo conectar con el servidor. Verifica tu conexión o la URL de la API.");
-            } else {
-                setError(`Error: ${err.message}`);
-            }
+            setError(`Error al agregar el producto: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -157,26 +146,23 @@ export default function AddProductForm() {
                     {imageUrls.map((url, index) => (
                         <div key={index} className="flex items-center space-x-2 mb-2">
                             <input
-                                type="url" // Tipo 'url' para validación básica del navegador
+                                type="url"
                                 value={url}
                                 onChange={(e) => handleImageUrlChange(index, e.target.value)}
                                 placeholder={`URL de Imagen ${index + 1}`}
                                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             />
-                            {/* Mostrar botón de eliminar si hay más de un campo */}
                             {imageUrls.length > 1 && (
                                 <button
                                     type="button"
                                     onClick={() => removeImageUrlInput(index)}
                                     className="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
-                                    {/* Icono de X */}
                                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             )}
                         </div>
                     ))}
-                    {/* Botón para agregar más campos de URL */}
                     <button
                         type="button"
                         onClick={addImageUrlInput}

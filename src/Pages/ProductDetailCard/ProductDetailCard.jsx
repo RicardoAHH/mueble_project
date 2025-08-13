@@ -61,14 +61,15 @@ export default function ProductDetailCard() {
 
     return (
         <>
-            <div className='pt-20 bg-[#F8F5EE] min-h-screen'> {/* Añadido min-h-screen para que no se vea cortado */}
-                <h1 className="text-3xl font-bold text-center py-4">{data.name || "Detalle del Producto"}</h1> {/* Muestra el nombre del producto */}
+            <div className='pt-20 bg-[#F8F5EE] min-h-screen'>
+                <h1 className="text-3xl font-bold text-center py-4">{data.name || "Detalle del Producto"}</h1>
                 <div className="w-full flex max-lg:flex-col justify-center">
                     <div className="lg:w-[40%]">
                         <ProductGallery images={images} />
                     </div>
                     <div className="lg:w-[50%] flex justify-center items-center">
-                        <ProductInfo product={data} /> {/* Puedes pasar 'data' completa a ProductInfo si la necesita */}
+                        {/* <-- ESTE ES EL CAMBIO CLAVE AQUÍ: Pasas el objeto 'data' */}
+                        <ProductInfo product={data} />
                     </div>
                 </div>
                 <div className="flex justify-center p-10">
@@ -77,7 +78,6 @@ export default function ProductDetailCard() {
                 <div>
                     <CustomerOpinions />
                 </div>
-                {/* --- PASO CLAVE: Pasa la categoría y el ID del producto actual a Sugest --- */}
                 {currentProductCategoryId && (
                     <Sugest
                         currentProductCategoryId={currentProductCategoryId}

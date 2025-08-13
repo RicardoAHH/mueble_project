@@ -1,4 +1,3 @@
-// src/Components/ControlAdmin/QuoteTable.jsx
 import React from 'react';
 
 // Recibimos una nueva prop: onMarkAsReviewed
@@ -44,11 +43,9 @@ export default function QuoteTable({ quotes, onMarkAsReviewed }) {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                     {quotes.map((quote) => (
-                        <tr key={quote.id || Math.random()}>
-                            {/* Asegúrate de que no haya espacios o saltos de línea aquí.
-                                Solo la etiqueta <td> inmediatamente después de <tr> */}
+                        <tr key={quote.id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {quote.id || 'N/A'}
+                                {quote.id}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {quote.name}
@@ -63,18 +60,23 @@ export default function QuoteTable({ quotes, onMarkAsReviewed }) {
                                 {quote.message}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {quote.created_at ? new Date(quote.created_at).toLocaleDateString() : 'Fecha no disponible'}
+                                {quote.createdAt ? quote.createdAt.toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) : 'Fecha no disponible'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${quote.status === 'reviewed' ? 'bg-green-100 text-green-800' :
-                                        quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-gray-100 text-gray-800'
+                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${quote.status === 'revisado' ? 'bg-green-100 text-green-800' :
+                                    'bg-yellow-100 text-yellow-800'
                                     }`}>
                                     {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                {quote.status === 'pending' && (
+                                {quote.status === 'pendiente' && (
                                     <button
                                         onClick={() => onMarkAsReviewed(quote.id)}
                                         className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 py-1 px-3 rounded-md transition duration-150 ease-in-out"

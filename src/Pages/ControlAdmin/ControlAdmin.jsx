@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+// ----------------------------------------------------
+// Importamos las funciones necesarias de Firestore
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../../firebase'; // Asegúrate de la ruta correcta
+// ----------------------------------------------------
+
+// Importaciones de tus componentes
 import PanelControl from '../../Components/ControlAdmin/PanelControl';
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import ProductTable from '../../Components/ControlAdmin/ProductTable';
 import AddProductForm from '../../Components/ControlAdmin/AddProductForm';
-import { getQuotes, updateQuoteStatus } from '../../libs/axios/quotes';
 import QuoteTable from '../../Components/ControlAdmin/quoteTable';
 
 export default function ControlAdmin() {
@@ -12,140 +17,119 @@ export default function ControlAdmin() {
     const [quotesData, setQuotesData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [activeView, setActiveView] = useState(null);
+    const [activeView, setActiveView] = useState('products'); // Vista inicial por defecto
 
-    const fetchProducts = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const token = localStorage.getItem('authToken');
-
-            if (!token) {
-                throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
-            }
-            const headers = {
-                'Authorization': `${token}`
-            };
-
-            const response = await axios.get('http://localhost:3000/api/v1/products', { headers });
-            setProductsData(response.data);
-            setActiveView('products');
-        } catch (err) {
-            console.error("Error al cargar los productos:", err);
-            if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
-                setError(err.message);
-            } else if (err.response && err.response.status === 401) {
-                setError("Acceso no autorizado. Tu sesión puede haber expirado. Por favor, vuelve a iniciar sesión.");
-            } else if (err.response && err.response.data && err.response.data.message) {
-                setError(`Error del servidor: ${err.response.data.message}`);
-            } else {
-                setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    // --- Nueva función para obtener cotizaciones ---
-    const fetchQuotes = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const token = localStorage.getItem('authToken');
-
-            if (!token) {
-                throw new Error("No se encontró un token de autenticación. Por favor, inicia sesión.");
-            }
-            // Tu `getQuotes` hook ya debería incluir el token en la instancia de Axios si la configuraste así.
-            // Si no, puedes modificar `getQuotes` o pasar el token aquí.
-            // Asumiendo que `instance` en `quotes.js` ya maneja el token:
-            const { data, status } = await getQuotes(); // Llama a tu hook de Axios
-
-            if (status === 200) {
-                setQuotesData(data);
-                setActiveView('quotes');
-            } else {
-                setError(`Error al cargar cotizaciones: Código de estado ${status}`);
-            }
-
-        } catch (err) {
-            console.error("Error al cargar las cotizaciones:", err);
-            let errorMessage = "No se pudieron cargar las cotizaciones. Inténtalo de nuevo más tarde.";
-
-            if (err.message === "No se encontró un token de autenticación. Por favor, inicia sesión.") {
-                errorMessage = err.message;
-            } else if (err.response) {
-                if (err.response.status === 401 || err.response.status === 403) {
-                    errorMessage = "Acceso no autorizado. Tu sesión puede haber expirado o no tienes permisos. Por favor, vuelve a iniciar sesión.";
-                } else if (err.response.data && err.response.data.message) {
-                    errorMessage = `Error del servidor: ${err.response.data.message}`;
-                }
-            } else if (err.request) {
-                errorMessage = "No se pudo conectar con el servidor para obtener cotizaciones. Verifica tu conexión.";
-            }
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const handleMarkQuoteAsReviewed = useCallback(async (quoteId) => {
+    // --- Adaptación para obtener productos con Firestore ---
+    const fetchProducts = useCallback(() => {
         setLoading(true);
         setError(null);
-        try {
-            // Enviamos el nuevo estado como "reviewed"
-            const { data, status } = await updateQuoteStatus(quoteId, "reviewed");
 
-            if (status === 200) {
-                // Actualiza el estado de quotesData para reflejar el cambio
-                setQuotesData(prevQuotes =>
-                    prevQuotes.map(quote =>
-                        quote.id === quoteId ? { ...quote, status: "reviewed" } : quote // Actualiza el campo 'status'
-                    )
-                );
-                alert('Cotización marcada como revisada con éxito.');
-            } else {
-                setError(`Error al actualizar cotización: Código de estado ${status}`);
-            }
-        } catch (err) {
-            console.error("Error al marcar cotización como revisada:", err);
-            let errorMessage = "Hubo un error al marcar la cotización como revisada.";
-            if (err.response) {
-                errorMessage = err.response.data.message || errorMessage;
-            }
-            setError(errorMessage);
-        } finally {
+        const productsRef = collection(db, 'products');
+
+        const unsubscribe = onSnapshot(productsRef, (snapshot) => {
+            const productsList = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Convierte las marcas de tiempo a un objeto Date
+                    created_at: data.created_at ? data.created_at.toDate() : null,
+                    updated_at: data.updated_at ? data.updated_at.toDate() : null,
+                };
+            });
+            setProductsData(productsList);
             setLoading(false);
+        }, (err) => {
+            console.error("Error al cargar los productos:", err);
+            setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
+            setLoading(false);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    // --- Adaptación para obtener cotizaciones con Firestore ---
+    const fetchQuotes = useCallback(() => {
+        setLoading(true);
+        setError(null);
+
+        const quotesRef = collection(db, 'quotes');
+
+        const unsubscribe = onSnapshot(quotesRef, (snapshot) => {
+            const quotesList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                // Asegurarse de que createdAt es un objeto Date
+                createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : null,
+            }));
+
+            // Ordenar por fecha de creación (las más nuevas primero)
+            quotesList.sort((a, b) => b.createdAt - a.createdAt);
+
+            setQuotesData(quotesList);
+            setLoading(false);
+        }, (err) => {
+            console.error("Error al cargar las cotizaciones:", err);
+            setError("No se pudieron cargar las cotizaciones. Inténtalo de nuevo más tarde.");
+            setLoading(false);
+        });
+
+        // Retorna la función de desuscripción para limpiar el listener
+        return unsubscribe;
+    }, []);
+
+
+    // --- Lógica para marcar como revisado (adaptada para Firestore) ---
+    const handleMarkQuoteAsReviewed = useCallback(async (quoteId) => {
+        try {
+            // Referencia al documento de la cotización
+            const quoteRef = doc(db, 'quotes', quoteId);
+            // Actualiza el campo 'status' del documento
+            await updateDoc(quoteRef, { status: "revisado" });
+            console.log(`Cotización ${quoteId} marcada como revisada.`);
+        } catch (error) {
+            console.error('Error al actualizar la cotización:', error);
+            setError("Hubo un error al actualizar la cotización.");
         }
     }, []);
 
     const handleShowProductsClick = () => {
         setActiveView('products');
-        fetchProducts();
     };
 
-    // Función para manejar el clic en "Adicionar Producto" 
     const handleAddProductClick = () => {
-        setActiveView('addProductForm'); // Por ejemplo, mostrar un formulario
-        setProductsData([]);
-        setQuotesData([]);
+        setActiveView('addProductForm');
     };
 
-    // Función para manejar el clic en "Mostrar Ventas" 
     const handleShowSalesClick = () => {
-        setActiveView('sales'); // Mostrar vista de ventas
-        setProductsData([]);
-        setQuotesData([]);
-        // Aquí podrías llamar a una función fetchSales()
+        setActiveView('sales');
     };
 
-    // Función para manejar el clic en "Mostrar Cotizaciones" 
     const handleShowQuotesClick = () => {
-        setActiveView('quotes'); // Mostrar vista de cotizaciones
-        setProductsData([]);
-        fetchQuotes();
-        // Aquí podrías llamar a una función fetchQuotes()
+        setActiveView('quotes');
     };
+
+    // Usamos useEffect para cargar los datos y limpiar los listeners
+    useEffect(() => {
+        let unsubscribeProducts;
+        let unsubscribeQuotes;
+
+        // Carga los productos al inicio
+        if (activeView === 'products') {
+            unsubscribeProducts = fetchProducts();
+        }
+
+        // Carga las cotizaciones
+        if (activeView === 'quotes') {
+            unsubscribeQuotes = fetchQuotes();
+        }
+
+        // Retorna una función de limpieza para desuscribirse de ambos listeners
+        return () => {
+            if (unsubscribeProducts) unsubscribeProducts();
+            if (unsubscribeQuotes) unsubscribeQuotes();
+        };
+    }, [activeView, fetchProducts, fetchQuotes]);
 
 
     if (loading) {
@@ -166,7 +150,6 @@ export default function ControlAdmin() {
         );
     }
 
-
     const renderContentView = () => {
         switch (activeView) {
             case 'products':
@@ -181,7 +164,6 @@ export default function ControlAdmin() {
                     <div className='w-full p-4'>
                         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Formulario para Adicionar Producto</h2>
                         <AddProductForm />
-                        <p className="text-gray-600">Formulario para agregar un nuevo producto...</p>
                     </div>
                 );
             case 'sales':
@@ -195,7 +177,7 @@ export default function ControlAdmin() {
                 return (
                     <div className='w-full p-4'>
                         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Lista de Cotizaciones</h2>
-                        <QuoteTable quotes={quotesData} onMarkAsReviewed={handleMarkQuoteAsReviewed} /> {/* Pasa las cotizaciones al nuevo componente */}
+                        <QuoteTable quotes={quotesData} onMarkAsReviewed={handleMarkQuoteAsReviewed} />
                     </div>
                 );
             default:
@@ -218,7 +200,6 @@ export default function ControlAdmin() {
                         onAddProduct={handleAddProductClick}
                         onShowSales={handleShowSalesClick}
                         onShowQuotes={handleShowQuotesClick}
-
                     />
                 </div>
                 <div className='w-full'>
