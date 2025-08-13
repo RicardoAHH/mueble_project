@@ -1,26 +1,35 @@
-import React, { useState } from 'react'; // Necesitarás useState para la selección de acabado y cantidad, si los haces interactivos
+import React, { useState } from 'react';
 
-export default function ProductInfo() {
+// Acepta la prop 'product' que viene del componente padre
+export default function ProductInfo({ product }) {
+    // Si la prop 'product' no existe, no renderizamos nada para evitar errores
+    if (!product) {
+        return null;
+    }
+
     // Puedes usar estados para manejar la selección de acabado y la cantidad si estos son interactivos
     const [selectedFinish, setSelectedFinish] = useState('Acabado Predeterminado');
     const [quantity, setQuantity] = useState(1);
 
     return (
-        <div className="product-info-container  w-[100%] bg-white p-6 md:p-8 rounded-lg shadow-xl  mx-auto">
+        <div className="product-info-container w-[100%] bg-white p-6 md:p-8 rounded-lg shadow-xl mx-auto">
             {/* Sección de Categoría y Nombre del Producto */}
             <div className="mb-6">
                 <h1 className="text-sm font-semibold text-[#a40202] uppercase tracking-wide mb-1">
-                    Categoría
+                    {/* <-- Muestra la categoría del producto */}
+                    Categoría {product.category_id}
                 </h1>
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">
-                    Nombre del Producto
+                    {/* <-- Muestra el nombre del producto */}
+                    {product.name}
                 </h2>
             </div>
 
             {/* Descripción del Producto */}
             <div className="mb-6">
                 <p className="text-gray-700 leading-relaxed text-base">
-                    Descripcion del producto, tipo de mueble, de que materiales esta hecho y si es de alguna tendencia, que caracteristicas tiene, etc.
+                    {/* <-- Muestra la descripción del producto */}
+                    {product.description}
                 </p>
             </div>
 
@@ -40,17 +49,14 @@ export default function ProductInfo() {
                 {/* Precio */}
                 <div className="flex items-baseline justify-center mb-6">
                     <span className="text-4xl font-extrabold text-[#a40202]">
-                        $1,299.00
+                        ${product.price ? parseFloat(product.price).toFixed(2) : "0.00"}
                     </span>
-                    {/* Aquí puedes añadir, por ejemplo, un precio anterior tachado o un descuento */}
-                    {/* <span className="text-lg text-gray-500 line-through ml-4">$1,500.00</span> */}
                 </div>
 
                 {/* Selección de Acabado */}
                 <div className="mb-6 flex flex-col justify-center items-center">
                     <p className="text-lg font-medium text-gray-800 mb-2">Selección de Acabado:</p>
                     <div className="flex gap-3">
-                        {/* Aquí podrías mapear las opciones de acabado */}
                         <button
                             onClick={() => setSelectedFinish('Natural')}
                             className={`px-4 py-2 rounded-lg border-2 ${selectedFinish === 'Natural' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-100'} text-gray-700 text-sm font-medium transition duration-200`}
@@ -69,14 +75,11 @@ export default function ProductInfo() {
                         >
                             Acabado 3
                         </button>
-                        {/* ... más opciones */}
                     </div >
                 </div >
             </div >
 
-
-            {/* Cantidad y Botón de Añadir al Carrito */}
-            < div className="flex flex-col sm:flex-row items-center gap-4 mb-6" >
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6" >
                 <div className="flex items-center border border-gray-300 rounded-lg p-1">
                     <label htmlFor="quantity" className="sr-only">Cantidad</label>
                     <button
@@ -103,16 +106,13 @@ export default function ProductInfo() {
                         +
                     </button>
                 </div>
-
                 <button className="flex-1 bg-[#431f0a] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105 w-full sm:w-auto">
                     Agregar al Carrito
                 </button>
             </div >
 
-            {/* Información de Envío */}
-            < div className="border-t border-gray-200 pt-6 mt-6" >
+            <div className="border-t border-gray-200 pt-6 mt-6" >
                 <p className="text-lg font-medium text-gray-800 mb-2">Información de Envío:</p>
-
             </div >
         </div >
     );

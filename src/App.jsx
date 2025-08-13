@@ -10,7 +10,7 @@ import QuoteForm from './Pages/Cotizaciones/QuoteForm'
 import About from './Pages/About/About'
 import LoginAdmin from './Pages/LoginAdmin/LoginAdmin'
 import ControlAdmin from './Pages/ControlAdmin/ControlAdmin'
-import PrivateRoutes from './Components/LoginAdmin/PrivateRoutes'
+import PrivateRoute from './Components/LoginAdmin/PrivateRoute'
 import WPbutton from './Components/Home/WPbutton'
 import Contacts from './Pages/Contact/Contacts'
 import Login from './Pages/LoginClient/Login'
@@ -33,9 +33,14 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         {/* <Route path="/26062025/admin" element={<ControlAdmin />} /> */}
         <Route path="/login" element={<Login />} />
-        < Route element={< PrivateRoutes />}>
-          <Route path="/26062025/admin" element={<ControlAdmin />} />
-        </Route >
+        <Route
+          path="/26062025/admin"
+          element={
+            <PrivateRoute>
+              <ControlAdmin />
+            </PrivateRoute>
+          }
+        />
 
       </Routes>
       <div className="fixed right-10 bottom-10">

@@ -1,59 +1,76 @@
 import { useState, useEffect, useMemo } from "react";
-import axios from 'axios';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../../firebase';
+
 import Carousel from "../../Components/Home/Carousel";
 import CategorySidebar from "../../Components/Home/CategorySidebar";
 import ProductGrid from "../../Components/Home/ProductGrid";
 
 function App() {
     const [selectedCategory, setSelectedCategory] = useState(null);
-    const [dynamicCategories, setDynamicCategories] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [productsData, setProductsData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                const response = await axios.get('http://localhost:3000/api/v1/products');
+                // Obtener las categorías de Firestore
+                const categoriesCollection = collection(db, 'categories');
+                const categoriesSnapshot = await getDocs(categoriesCollection);
+                const categoryList = categoriesSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: Number(data.id), // Aseguramos que el ID de la categoría sea un NÚMERO
+                        ...data,
+                    };
+                });
 
-                setProductsData(response.data);
-                const uniqueCategoryIds = [...new Set(response.data.map(product => product.category_id))];
-                const derivedCategories = [
+                const categoryMap = categoryList.reduce((acc, cat) => {
+                    acc[cat.id] = cat.name;
+                    return acc;
+                }, {});
 
-                    ...uniqueCategoryIds.map(id => ({
-                        id: id,
-                        name: `Categoría ${id}`
-                    }))
-                ];
-                setDynamicCategories(derivedCategories);
+                // Obtener los productos de Firestore
+                const productsCollection = collection(db, 'products');
+                const productsSnapshot = await getDocs(productsCollection);
+                const productList = productsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        category_id: Number(data.category_id), // Aseguramos que el ID del producto sea un NÚMERO
+                        category_name: categoryMap[data.category_id] || 'Sin categoría',
+                    };
+                });
 
-                if (selectedCategory === null) {
-                    setSelectedCategory(null);
-                }
+                setProductsData(productList);
+                // <-- CAMBIO CLAVE AQUÍ: Usamos un ID de cadena único para "Todas las categorías"
+                setCategories([{ id: 'all', name: "Todas las categorías", icon: "🏠" }, ...categoryList]);
+
             } catch (err) {
-                console.error("Error al cargar los productos:", err);
-                if (err.response && err.response.data && err.response.data.message) {
-                    setError(`Error del servidor: ${err.response.data.message}`);
-                } else {
-                    setError("No se pudieron cargar los productos. Inténtalo de nuevo más tarde.");
-                }
+                console.error("Error al cargar los datos:", err);
+                setError("No se pudieron cargar los datos. Inténtalo de nuevo más tarde.");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProducts();
-    }, []); // Dependencias: no necesitas `selectedCategory` si solo lo seteas a null
+        fetchData();
+    }, []);
 
     const filteredProducts = useMemo(() => {
         if (!productsData) return [];
-        if (selectedCategory === null) {
+        // <-- CAMBIO CLAVE AQUÍ: El filtro ahora también maneja el ID 'all'
+        if (selectedCategory === null || selectedCategory === 'all') {
             return productsData;
         }
-        return productsData.filter(product => product.category_id === selectedCategory);
+        // La comparación es segura, ya que ambos valores son números
+        return productsData.filter(product => product.category_id === Number(selectedCategory));
     }, [productsData, selectedCategory]);
 
     if (loading) {
@@ -74,37 +91,25 @@ function App() {
         );
     }
 
-    console.log(productsData);
     return (
         <div className="pt-15 min-h-screen bg-[#F8F5EE]">
-
-
-            {/* Carrusel */}
             <Carousel />
-
-            {/* Sección principal con categorías y productos */}
             <section className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Categorías (izquierda) */}
                     <div className="lg:col-span-1">
                         <CategorySidebar
-                            categories={dynamicCategories}
+                            categories={categories}
                             selectedCategory={selectedCategory}
                             setSelectedCategory={setSelectedCategory}
                         />
                     </div>
-
-                    {/* Productos (derecha) */}
                     <div className="lg:col-span-3">
-                        <ProductGrid products={filteredProducts} categories={dynamicCategories} selectedCategory={selectedCategory} />
+                        <ProductGrid products={filteredProducts} categories={categories} selectedCategory={selectedCategory} />
                     </div>
-
                 </div>
             </section>
-
-
         </div>
     )
 }
 
-export default App
+export default App;

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { sendQuote } from '../../libs/axios/quotes';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Importaciones de Firebase
+import { db } from '../../../firebase'; // Asegúrate de que la ruta a tu configuración de Firebase sea correcta
+
 export default function QuoteForm() {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
         email: '',
         message: '',
-        // file: null, // Si tu API de quotes NO maneja archivos directamente en el body, es mejor quitarlo o manejarlo por separado
     });
 
     const [formStatus, setFormStatus] = useState({
@@ -23,75 +24,45 @@ export default function QuoteForm() {
         }));
     };
 
-    // Si tu API no soporta subir archivos con la misma ruta de quotes,
-    // puedes eliminar handleFileChange y el input de tipo file.
-    // Si sí lo soporta, necesitarás ajustar handleSubmit para usar FormData.
-    /*
-    const handleFileChange = (e) => {
-        setFormData((prevData) => ({
-            ...prevData,
-            file: e.target.files[0], // Solo tomamos el primer archivo
-        }));
-    };
-    */
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormStatus({ submitted: true, success: false, message: 'Enviando cotización...' });
 
-        // Extrae los datos que coinciden con tu definición de QuoteCreate en Swagger
-        // Tu Swagger QuoteCreate solo tiene 'name', 'email', 'phone', 'message'.
-        const { name, email, phone, message } = formData;
-        const dataToSend = { name, email, phone, message };
-
         try {
-            const { data, status } = await sendQuote(dataToSend);
+            // Extrae los datos del formulario
+            const { name, email, phone, message } = formData;
 
-            if (status === 201) { // 201 Created es el código esperado para una creación exitosa
-                setFormStatus({
-                    submitted: true,
-                    success: true,
-                    message: '¡Cotización enviada con éxito! Nos pondremos en contacto pronto.',
-                });
-                setFormData({ // Limpia el formulario después del éxito
-                    name: '',
-                    phone: '',
-                    email: '',
-                    message: '',
-                    // file: null, // Si mantuviste el campo file, límpialo también aquí
-                });
-                // Para limpiar visualmente el input de archivo (si lo mantuviste)
-                // if (document.getElementById('file-upload')) {
-                //     document.getElementById('file-upload').value = '';
-                // }
-            } else {
-                // Manejar otros códigos de estado exitosos pero no 201 si fuera el caso
-                setFormStatus({
-                    submitted: true,
-                    success: false,
-                    message: `Error inesperado (${status}). Por favor, inténtalo de nuevo.`,
-                });
-            }
+            // Crea un objeto con los datos a guardar en Firestore
+            const quoteData = {
+                name,
+                email,
+                phone,
+                message,
+                status: 'pendiente', // Asignamos un estado inicial
+                createdAt: serverTimestamp(), // Firestore maneja el timestamp automáticamente
+            };
+
+            // Referencia a la colección 'quotes'
+            const quotesCollectionRef = collection(db, 'quotes');
+
+            // Agrega el nuevo documento a la colección
+            await addDoc(quotesCollectionRef, quoteData);
+
+            setFormStatus({
+                submitted: true,
+                success: true,
+                message: '¡Cotización enviada con éxito! Nos pondremos en contacto pronto.',
+            });
+            setFormData({ // Limpia el formulario después del éxito
+                name: '',
+                phone: '',
+                email: '',
+                message: '',
+            });
 
         } catch (error) {
             console.error('Error al enviar la cotización:', error);
-
-            let errorMessage = 'Hubo un error al enviar tu cotización. Por favor, inténtalo de nuevo.';
-
-            // Si es un error de Axios y viene con una respuesta del servidor
-            if (error.response) {
-                // Accede al mensaje de error del backend si existe
-                errorMessage = error.response.data.message || error.response.data.error || errorMessage;
-                console.error('Detalles del error del servidor:', error.response.data);
-                console.error('Código de estado del error:', error.response.status);
-            } else if (error.request) {
-                // La solicitud fue hecha pero no hubo respuesta
-                errorMessage = 'No se pudo conectar con el servidor. Por favor, verifica tu conexión.';
-            } else {
-                // Algo más causó el error
-                errorMessage = error.message || errorMessage;
-            }
-
+            const errorMessage = 'Hubo un error al enviar tu cotización. Por favor, inténtalo de nuevo.';
             setFormStatus({
                 submitted: true,
                 success: false,
@@ -178,23 +149,6 @@ export default function QuoteForm() {
                             placeholder="Describe detalladamente lo que necesitas cotizar..."
                         ></textarea>
                     </div>
-
-                    {/* Si necesitas un campo de archivo y tu API lo soporta así, descomenta y ajusta: */}
-                    {/*
-                    <div>
-                        <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-1">
-                            Adjuntar archivo (opcional)
-                        </label>
-                        <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            onChange={handleFileChange}
-                            className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                        />
-                        <p className="mt-1 text-xs text-gray-500">PDF, JPG, PNG, DOC (max. 5MB)</p>
-                    </div>
-                    */}
 
                     {/* Botón de Enviar */}
                     <div>

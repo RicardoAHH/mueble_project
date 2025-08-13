@@ -1,30 +1,25 @@
-
 import React, { useState, useEffect } from 'react';
-
-// Importa tu función de actualización
-import { updateProduct } from '../../libs/axios/updateProduct';
-
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../../firebase';
 
 const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
-    // Estado local para los datos del formulario de edición
     const [formData, setFormData] = useState({
         name: '',
         price: '',
         description: '',
-        images: [], // Puede ser un array de strings (URLs) o File objects
+        images: '',
         category_id: '',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Llenar el formulario con los datos del producto cuando se abre el modal
     useEffect(() => {
         if (product) {
             setFormData({
                 name: product.name || '',
                 price: product.price ? parseFloat(product.price).toFixed(2) : '',
                 description: product.description || '',
-                images: product.images || [], // Asume que images es un array de URLs
+                images: product.images ? product.images.join(', ') : '',
                 category_id: product.category_id || '',
             });
         }
@@ -37,7 +32,7 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
 
     const handleImageChange = (e) => {
         const value = e.target.value;
-        setFormData(prev => ({ ...prev, images: value.split(',').map(img => img.trim()) }));
+        setFormData(prev => ({ ...prev, images: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -48,30 +43,34 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
         try {
             const payload = {
                 name: formData.name,
-                price: parseFloat(formData.price), // Convertir a número antes de enviar
+                price: parseFloat(formData.price),
                 description: formData.description,
-                images: formData.images,
-                category_id: parseInt(formData.category_id), // Convertir a número entero
+                images: formData.images.split(',').map(img => img.trim()).filter(url => url !== ''),
+                category_id: parseInt(formData.category_id),
+                updated_at: serverTimestamp(),
             };
 
-            const { status } = await updateProduct(product.id, payload);
+            const productDocRef = doc(db, 'products', product.id);
+            await updateDoc(productDocRef, payload);
 
-            if (status === 200) {
-                alert('Producto actualizado con éxito!');
-                onSaveSuccess(); // Llama al callback para que el padre recargue la lista
-                onClose(); // Cierra el modal
-            } else {
-                setError(`Error al actualizar el producto. Código: ${status}`);
+            alert('Producto actualizado con éxito!');
+
+            // <-- CAMBIO CLAVE AQUÍ: Llama a la función solo si es válida
+            if (typeof onSaveSuccess === 'function') {
+                onSaveSuccess();
             }
+
+            onClose();
+
         } catch (err) {
             console.error('Error al actualizar:', err);
-            setError(err.response?.data?.message || 'Error al actualizar el producto.');
+            setError('Error al actualizar el producto. Inténtalo de nuevo.');
         } finally {
             setLoading(false);
         }
     };
 
-    if (!product) return null; // No renderizar si no hay producto
+    if (!product) return null;
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
@@ -99,7 +98,7 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
                             value={formData.price}
                             onChange={handleChange}
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            step="0.01" // Permite decimales para el precio
+                            step="0.01"
                             required
                         />
                     </div>
@@ -121,16 +120,15 @@ const EditProductModal = ({ product, onClose, onSaveSuccess }) => {
                             type="text"
                             id="images"
                             name="images"
-                            value={formData.images.join(', ')} // Muestra las URLs separadas por coma
+                            value={formData.images}
                             onChange={handleImageChange}
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                             placeholder="url1, url2, url3"
                         />
-                        {/* Si tienes imágenes existentes, podrías mostrarlas aquí y permitir eliminarlas */}
-                        {formData.images && formData.images.length > 0 && (
+                        {formData.images && formData.images.split(',').filter(url => url.trim() !== '').length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
-                                {formData.images.map((img, index) => (
-                                    <img key={index} src={img} alt={`Imagen ${index}`} className="h-20 w-20 object-cover rounded" />
+                                {formData.images.split(',').map((img, index) => (
+                                    <img key={index} src={img.trim()} alt={`Imagen ${index}`} className="h-20 w-20 object-cover rounded" />
                                 ))}
                             </div>
                         )}

@@ -1,7 +1,7 @@
-// src/Components/ProductDetailCard/Sugest.jsx
 import { useEffect, useState } from 'react';
-import axios from 'axios'; // Usamos axios directamente para simplificar. Si tienes una instancia global sin interceptores problemáticos, úsala.
-import { Link } from 'react-router'; // Para navegar a los productos sugeridos
+import { Link } from 'react-router'; // Asegúrate de usar 'react-router-dom' para 'Link'
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../firebase'; // Asegúrate de que la ruta sea correcta
 
 const Sugest = ({ currentProductCategoryId, currentProductId }) => {
     const [suggestedProducts, setSuggestedProducts] = useState([]);
@@ -13,31 +13,38 @@ const Sugest = ({ currentProductCategoryId, currentProductId }) => {
             setLoading(true);
             setError(null);
             try {
-                // Obtener TODOS los productos (asumiendo que /api/v1/products devuelve todos y está desprotegida)
-                const response = await axios.get('http://localhost:3000/api/v1/products');
-                const allProducts = response.data;
-
-                // Filtrar por categoría y excluir el producto actual
-                const filtered = allProducts.filter(
-                    (product) =>
-                        product.category_id === currentProductCategoryId &&
-                        product.id !== currentProductId
+                // Preparamos la consulta a Firestore
+                // El campo `category_id` debe ser igual a la categoría del producto actual
+                const q = query(
+                    collection(db, 'products'),
+                    where('category_id', '==', Number(currentProductCategoryId))
                 );
 
-                // Mezclar los productos filtrados y tomar los primeros 4
+                const querySnapshot = await getDocs(q);
+                const allProducts = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Filtramos para excluir el producto actual de la lista de sugerencias
+                const filtered = allProducts.filter(
+                    (product) => product.id !== currentProductId
+                );
+
+                // Mezclamos y tomamos hasta 4 productos para sugerir
                 const shuffled = filtered.sort(() => 0.5 - Math.random());
-                const suggestions = shuffled.slice(0, 4); // Tomar solo los primeros 4
+                const suggestions = shuffled.slice(0, 4);
 
                 setSuggestedProducts(suggestions);
             } catch (err) {
-                console.error("Error fetching suggested products:", err);
+                console.error("Error al obtener sugerencias de productos:", err);
                 setError("No se pudieron cargar sugerencias de productos.");
             } finally {
                 setLoading(false);
             }
         };
 
-        // Solo ejecutar si tenemos una category_id válida
+        // Solo ejecutamos la consulta si tenemos un categoryId válido
         if (currentProductCategoryId) {
             fetchSuggestedProducts();
         } else {
@@ -69,7 +76,7 @@ const Sugest = ({ currentProductCategoryId, currentProductId }) => {
         );
     }
 
-    // Formateador de moneda (puedes reutilizar el de tu ProductTable si es un util)
+    // Formateador de moneda (ajusta si es necesario)
     const currencyFormatter = new Intl.NumberFormat('es-MX', {
         style: 'currency',
         currency: 'MXN',
@@ -103,7 +110,7 @@ const Sugest = ({ currentProductCategoryId, currentProductId }) => {
                                 <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                                     {product.description}
                                 </p>
-                                <div className="mt-auto"> {/* Empuja el precio hacia abajo */}
+                                <div className="mt-auto">
                                     <p className="text-xl font-bold text-green-700">
                                         {currencyFormatter.format(parseFloat(product.price))}
                                     </p>
