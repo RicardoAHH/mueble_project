@@ -1,41 +1,45 @@
-"use client"
-import { Link } from "react-router"; // Asegúrate de que estás usando react-router-dom
-import { useState, useEffect, useRef } from "react"
+import { Link } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from '../../App'; // La importación ahora es un nivel superior
 
 export default function Header() {
+  const { currentUser, userProfile, handleLogout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // Estado para controlar si el usuario está autenticado (basado en localStorage)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // Nuevo estado para controlar la visibilidad del menú desplegable del usuario
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  // Nuevo estado para controlar la visibilidad del carrito flotante
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  // Estado simulado para el carrito
+  const [cartItems, setCartItems] = useState([
+    { id: 1, name: "Silla de comedor 'Minimal'", price: 120, quantity: 1 },
+    { id: 2, name: "Mesa de centro 'Roble'", price: 250, quantity: 1 },
+    { id: 3, name: "Lámpara de pie 'Industrial'", price: 85, quantity: 1 },
+  ]);
 
-  const menuRef = useRef(null); // Ref para el menú principal de navegación
-  const menuButtonRef = useRef(null); // Ref para el botón que abre el menú principal
+  // Refs para los menús y el carrito
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
+  const userMenuRef = useRef(null);
+  const userMenuButtonRef = useRef(null);
+  const cartRef = useRef(null);
+  const cartButtonRef = useRef(null);
 
-  const userMenuRef = useRef(null); // Ref para el menú desplegable del usuario
-  const userMenuButtonRef = useRef(null); // Ref para el botón que abre el menú del usuario
-
-  // Función para cerrar el menú principal
   const closeMainMenu = () => {
     setIsMenuOpen(false);
   };
 
-  // Función para cerrar el menú desplegable del usuario
   const closeUserDropdown = () => {
     setIsUserDropdownOpen(false);
   };
 
-  // Efecto para verificar el token de autenticación al cargar el componente
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, []); // Se ejecuta solo una vez al montar el componente
+  const toggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
 
-  // Efecto para manejar clics fuera de los menús
+  // Calcula el total de artículos en el carrito
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const cartTotalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  // Efecto para manejar clics fuera de los menús y el carrito
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Lógica para cerrar el menú principal
@@ -45,10 +49,15 @@ export default function Header() {
       }
 
       // Lógica para cerrar el menú de usuario
-      // Solo si el menú de usuario está abierto y el clic fue fuera de él o de su botón
       if (isUserDropdownOpen && userMenuRef.current && !userMenuRef.current.contains(event.target) &&
         userMenuButtonRef.current && !userMenuButtonRef.current.contains(event.target)) {
         closeUserDropdown();
+      }
+
+      // Lógica para cerrar el carrito flotante
+      if (isCartOpen && cartRef.current && !cartRef.current.contains(event.target) &&
+        cartButtonRef.current && !cartButtonRef.current.contains(event.target)) {
+        setIsCartOpen(false);
       }
     };
 
@@ -56,17 +65,7 @@ export default function Header() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isMenuOpen, isUserDropdownOpen]); // Agrega isUserDropdownOpen a las dependencias
-
-  // Función para manejar el cierre de sesión
-  const handleLogout = () => {
-    localStorage.removeItem('authToken'); // Elimina el token del localStorage
-    setIsAuthenticated(false); // Actualiza el estado de autenticación
-    closeUserDropdown(); // Cierra el menú desplegable del usuario al cerrar sesión
-    // Opcional: Redirigir al usuario a la página de inicio de sesión o a la página principal
-    // navigate('/login'); // Si usas `useNavigate`
-    window.location.reload(); // Recarga la página para asegurar que el Header se actualice
-  };
+  }, [isMenuOpen, isUserDropdownOpen, isCartOpen]);
 
   return (
     <header className="bg-[#aca5a2] shadow-md fixed w-full top-0 z-50">
@@ -118,27 +117,27 @@ export default function Header() {
             {isMenuOpen && (
               <div ref={menuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg z-50 flex flex-col">
                 <Link to="/" className="flex items-center justify-center">
-                  <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                  <button onClick={closeMainMenu} className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Inicio
                   </button>
                 </Link>
                 <Link to="/about" className="flex items-center justify-center">
-                  <button className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                  <button onClick={closeMainMenu} className="hover:border-1 w-full font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Nosotros
                   </button>
                 </Link>
                 <Link to='/contacts' className="flex items-center justify-center">
-                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                  <button onClick={closeMainMenu} className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Contacto
                   </button>
                 </Link>
                 <Link to="/products" className="flex items-center justify-center">
-                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                  <button onClick={closeMainMenu} className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Catálogo
                   </button>
                 </Link>
                 <Link to='/quotes' className="flex items-center justify-center">
-                  <button className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
+                  <button onClick={closeMainMenu} className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]">
                     Cotizaciones
                   </button>
                 </Link>
@@ -146,13 +145,13 @@ export default function Header() {
             )}
           </div>
 
-          {/* Login y Carrito */}
+          {/* Lógica para mostrar "Mi cuenta" o "Iniciar sesión" */}
           <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
+            {currentUser && userProfile ? (
               // Menú desplegable para usuario logeado
               <div className="relative">
                 <button
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)} // Ahora se togglea el nuevo estado
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                   ref={userMenuButtonRef}
                   className="flex items-center text-gray-700 hover:text-blue-600"
                 >
@@ -164,9 +163,8 @@ export default function Header() {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  <span className="ml-1 hidden sm:block">Mi Cuenta</span>
+                  <span className="ml-1 hidden sm:block font-bold">Hola, {userProfile.name}</span>
                 </button>
-                {/* El menú del usuario se muestra si isUserDropdownOpen es true */}
                 {isUserDropdownOpen && (
                   <div ref={userMenuRef} className="absolute right-0 mt-3 w-40 bg-white rounded-md shadow-lg z-50 flex flex-col">
                     <Link to="/profile" className="flex items-center justify-center">
@@ -180,7 +178,7 @@ export default function Header() {
                       </button>
                     </Link>
                     <button
-                      onClick={handleLogout}
+                      onClick={() => { handleLogout(); closeUserDropdown(); }}
                       className="w-full hover:border-1 font-semibold p-2 border-blue-800 rounded-md hover:text-white hover:bg-[#431f0a]"
                     >
                       Salir
@@ -207,7 +205,12 @@ export default function Header() {
               </Link>
             )}
 
-            <button className="flex items-center text-gray-700 hover:text-blue-600 relative mx-5">
+            {/* Botón para abrir el carrito flotante */}
+            <button
+              onClick={toggleCart}
+              ref={cartButtonRef}
+              className="flex items-center text-gray-700 hover:text-blue-600 relative mx-5"
+            >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -217,13 +220,68 @@ export default function Header() {
                 />
               </svg>
               <span className="ml-1 hidden sm:block">Carrito</span>
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                3
-              </span>
+              {/* Contador de artículos del carrito */}
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Componente flotante del carrito */}
+      {isCartOpen && (
+        <div
+          ref={cartRef}
+          className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-50 transform transition-transform ease-in-out duration-300"
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h2 className="text-2xl font-bold">Tu carrito</h2>
+              <button onClick={toggleCart} className="text-gray-500 hover:text-gray-800">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-grow overflow-y-auto">
+              {cartItems.length === 0 ? (
+                <p className="text-center text-gray-500">Tu carrito está vacío.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {cartItems.map((item) => (
+                    <li key={item.id} className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
+                      </div>
+                      <p className="font-semibold">${item.price * item.quantity}.00</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t">
+              <div className="flex justify-between items-center font-bold text-lg mb-4">
+                <span>Total:</span>
+                <span>${cartTotalPrice}.00</span>
+              </div>
+              <Link to="/cart">
+                <button
+                  onClick={toggleCart}
+                  className="w-full bg-[#431f0a] text-white p-3 rounded-md font-bold hover:bg-[#2e1507] transition-colors"
+                >
+                  Ver Carrito y Pagar
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
-  )
+  );
 }

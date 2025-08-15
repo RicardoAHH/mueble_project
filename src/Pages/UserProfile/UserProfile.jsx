@@ -1,306 +1,212 @@
-// src/Pages/UserProfile.jsx
-"use client"
 import React, { useState, useEffect } from 'react';
-import { fetchUserProfile, updateUserProfile, changeUserPassword } from '../../libs/axios/user';
+import { useAuth } from '../../App'; // Ruta de importación corregida
+import { useNavigate } from 'react-router';
+import { doc, getFirestore, getDoc, setDoc } from 'firebase/firestore';
+import { getAuth, updateProfile } from 'firebase/auth';
 
-export default function UserProfile() {
-    const [userData, setUserData] = useState(null);
-    const [profileFormData, setProfileFormData] = useState({
+const UserProfile = () => {
+    // Obtenemos el usuario actual y la función de cierre de sesión desde el contexto
+    const { currentUser, userProfile, handleLogout } = useAuth();
+    const navigate = useNavigate();
+
+    // Estados para el modo de edición y los datos del formulario
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
         name: '',
-        lastname: '',
-        email: '',
-        phone: ''
+        lastName: '',
+        phoneNumber: '',
     });
-    const [passwordFormData, setPasswordFormData] = useState({
-        oldPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
-    });
-    const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
-    const [isEditingProfile, setIsEditingProfile] = useState(false); // Para alternar entre vista y edición del perfil
-    const [showPasswordChange, setShowPasswordChange] = useState(false); // Para mostrar/ocultar el formulario de cambio de contraseña
 
-    // Función para obtener los datos del usuario
-    const getUserProfile = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const data = await fetchUserProfile();
-            setUserData(data);
-            // Inicializar el formulario de perfil con los datos actuales del usuario
-            setProfileFormData({
-                name: data.name || '',
-                lastname: data.lastname || '',
-                email: data.email || '',
-                phone: data.phone || ''
-            });
-        } catch (err) {
-            setError('Error al cargar el perfil. Por favor, inténtalo de nuevo.');
-            console.error('Error fetching user profile:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Efecto para inicializar el formulario con los datos del usuario
     useEffect(() => {
-        getUserProfile();
-    }, []);
-
-    // Manejadores de cambio para los formularios
-    const handleProfileChange = (e) => {
-        setProfileFormData({ ...profileFormData, [e.target.name]: e.target.value });
-    };
-
-    const handlePasswordChange = (e) => {
-        setPasswordFormData({ ...passwordFormData, [e.target.name]: e.target.value });
-    };
-
-    // Manejador para actualizar el perfil
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setMessage('');
-        setError('');
-        try {
-            await updateUserProfile(profileFormData);
-            setMessage('Perfil actualizado exitosamente.');
-            setIsEditingProfile(false); // Salir del modo de edición
-            // Volver a cargar el perfil para asegurar que los datos mostrados estén actualizados
-            await getUserProfile();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al actualizar el perfil.');
-            console.error('Error updating profile:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Manejador para cambiar la contraseña
-    const handleChangePassword = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setMessage('');
-        setError('');
-
-        if (passwordFormData.newPassword !== passwordFormData.confirmNewPassword) {
-            setError('La nueva contraseña y la confirmación no coinciden.');
-            setLoading(false);
-            return;
-        }
-
-        try {
-            await changeUserPassword({
-                oldPassword: passwordFormData.oldPassword,
-                newPassword: passwordFormData.newPassword
+        if (currentUser && userProfile) {
+            setFormData({
+                // Inicializamos los campos con los datos de Firestore
+                name: userProfile.name || '',
+                lastName: userProfile.lastName || '',
+                // Corregido para leer del campo 'phone' de Firestore
+                phoneNumber: userProfile.phone || '',
             });
-            setMessage('Contraseña cambiada exitosamente.');
-            setPasswordFormData({ oldPassword: '', newPassword: '', confirmNewPassword: '' }); // Limpiar formulario
-            setShowPasswordChange(false); // Ocultar formulario de cambio de contraseña
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error al cambiar la contraseña. Verifica tu contraseña actual.');
-            console.error('Error changing password:', err);
-        } finally {
-            setLoading(false);
+        }
+    }, [currentUser, userProfile]);
+
+    // Función para manejar el clic en el botón de cerrar sesión
+    const handleSignOut = async () => {
+        try {
+            await handleLogout();
+            // Redirigir al usuario a la página de inicio de sesión después de cerrar sesión
+            navigate('/login');
+        } catch (error) {
+            console.error("Error al cerrar sesión desde el perfil:", error);
         }
     };
 
-    if (loading && !userData) {
+    // Función para manejar los cambios en el formulario
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+    };
+
+    // Función para guardar los cambios en el perfil
+    const handleSaveChanges = async () => {
+        if (!currentUser) return;
+
+        try {
+            // Concatenar nombre y apellido para actualizar displayName en Firebase Auth
+            const combinedDisplayName = `${formData.name} ${formData.lastName}`.trim();
+            await updateProfile(currentUser, {
+                displayName: combinedDisplayName,
+            });
+
+            // Actualizar el documento en Firestore con campos separados
+            const auth = getAuth();
+            const db = getFirestore();
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const userProfileRef = doc(db, `/artifacts/${appId}/users/${currentUser.uid}/profile`, currentUser.uid);
+
+            await setDoc(userProfileRef, {
+                ...userProfile,
+                name: formData.name,
+                lastName: formData.lastName,
+                phone: formData.phoneNumber,
+                lastUpdated: new Date().toISOString(),
+            }, { merge: true });
+
+            console.log('Perfil actualizado exitosamente.');
+            setIsEditing(false); // Volver al modo de visualización
+        } catch (error) {
+            console.error("Error al guardar los cambios:", error);
+            // Revertir a la vista de visualización en caso de error
+            setIsEditing(false);
+        }
+    };
+
+    // Si el usuario no está autenticado, no se muestra el perfil
+    if (!currentUser) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F8F5EE]">
-                <div className="text-gray-700 text-lg">Cargando perfil...</div>
+            <div className="flex items-center justify-center min-h-screen bg-[#F8F5EE]">
+                <p className="text-gray-700 text-lg">Debes iniciar sesión para ver esta página.</p>
             </div>
         );
     }
 
-    if (error && !userData) {
+    // Se muestran los datos del perfil del usuario en modo de visualización
+    if (!isEditing) {
+        const fullName = `${userProfile?.name || ''} ${userProfile?.lastName || ''}`.trim() || 'N/A';
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F8F5EE]">
-                <div className="text-red-700 text-lg">Error: {error}</div>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+                <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md space-y-6 transform transition-transform duration-300 hover:scale-105">
+                    <h2 className="text-3xl font-bold text-gray-800 text-center">Mi Perfil</h2>
+                    <div className="space-y-4">
+                        <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                            <h3 className="text-sm font-semibold text-gray-500">Nombre Completo</h3>
+                            <p className="text-lg font-medium text-gray-900">{fullName}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                            <h3 className="text-sm font-semibold text-gray-500">Correo Electrónico</h3>
+                            <p className="text-lg font-medium text-gray-900">{currentUser?.email || 'N/A'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                            <h3 className="text-sm font-semibold text-gray-500">UID</h3>
+                            <p className="text-lg font-medium text-gray-900 break-words">{currentUser.uid}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+                            <h3 className="text-sm font-semibold text-gray-500">Teléfono</h3>
+                            <p className="text-lg font-medium text-gray-900">{userProfile?.phone || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    >
+                        Editar Perfil
+                    </button>
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    >
+                        Cerrar Sesión
+                    </button>
+                </div>
             </div>
         );
     }
 
+    // Vista de formulario para editar el perfil
     return (
-        <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center p-4 pt-20"> {/* pt-20 para dejar espacio al header fijo */}
-            <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
-                <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Mi Perfil</h2>
-
-                {message && (
-                    <div className="p-3 mb-4 rounded-md text-center bg-green-100 text-green-700">
-                        {message}
-                    </div>
-                )}
-                {error && (
-                    <div className="p-3 mb-4 rounded-md text-center bg-red-100 text-red-700">
-                        {error}
-                    </div>
-                )}
-
-                {/* Sección de visualización del perfil */}
-                {!isEditingProfile ? (
-                    <div className="space-y-4 mb-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-semibold text-gray-700">Información Personal</h3>
-                            <button
-                                onClick={() => setIsEditingProfile(true)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
-                            >
-                                Editar Perfil
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <p><span className="font-medium">Nombre:</span> {userData?.name}</p>
-                            <p><span className="font-medium">Apellido:</span> {userData?.lastname}</p>
-                            <p><span className="font-medium">Email:</span> {userData?.email}</p>
-                            <p><span className="font-medium">Teléfono:</span> {userData?.phone || 'N/A'}</p>
-                            <p><span className="font-medium">Rol:</span> {userData?.role?.name || 'N/A'}</p>
-                        </div>
-                    </div>
-                ) : (
-                    /* Formulario de edición de perfil */
-                    <form onSubmit={handleUpdateProfile} className="space-y-4 mb-6 p-4 border border-gray-200 rounded-md">
-                        <h3 className="text-xl font-semibold text-gray-700">Editar Información Personal</h3>
-                        <div>
-                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre:</label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                value={profileFormData.name}
-                                onChange={handleProfileChange}
-                                required
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="lastname" className="block text-sm font-medium text-gray-700">Apellido:</label>
-                            <input
-                                type="text"
-                                id="lastname"
-                                name="lastname"
-                                value={profileFormData.lastname}
-                                onChange={handleProfileChange}
-                                required
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email:</label>
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                value={profileFormData.email}
-                                onChange={handleProfileChange}
-                                required
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono:</label>
-                            <input
-                                type="tel"
-                                id="phone"
-                                name="phone"
-                                value={profileFormData.phone}
-                                onChange={handleProfileChange}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            />
-                        </div>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsEditingProfile(false);
-                                    // Opcional: resetear profileFormData a los userData originales si se cancela
-                                    setProfileFormData({
-                                        name: userData?.name || '',
-                                        lastname: userData?.lastname || '',
-                                        email: userData?.email || '',
-                                        phone: userData?.phone || ''
-                                    });
-                                    setError(''); // Limpiar errores al cancelar
-                                }}
-                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-300"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Guardando...' : 'Guardar Cambios'}
-                            </button>
-                        </div>
-                    </form>
-                )}
-
-                {/* Sección de cambio de contraseña */}
-                <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold text-gray-700">Cambiar Contraseña</h3>
-                        <button
-                            onClick={() => setShowPasswordChange(!showPasswordChange)}
-                            className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition duration-300"
-                        >
-                            {showPasswordChange ? 'Ocultar Formulario' : 'Cambiar Contraseña'}
-                        </button>
-                    </div>
-
-                    {showPasswordChange && (
-                        <form onSubmit={handleChangePassword} className="space-y-4 p-4 border border-gray-200 rounded-md">
-                            <div>
-                                <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700">Contraseña Actual:</label>
-                                <input
-                                    type="password"
-                                    id="oldPassword"
-                                    name="oldPassword"
-                                    value={passwordFormData.oldPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">Nueva Contraseña:</label>
-                                <input
-                                    type="password"
-                                    id="newPassword"
-                                    name="newPassword"
-                                    value={passwordFormData.newPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700">Confirmar Nueva Contraseña:</label>
-                                <input
-                                    type="password"
-                                    id="confirmNewPassword"
-                                    name="confirmNewPassword"
-                                    value={passwordFormData.confirmNewPassword}
-                                    onChange={handlePasswordChange}
-                                    required
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                />
-                            </div>
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md space-y-6 transform transition-transform duration-300 hover:scale-105">
+                <h2 className="text-3xl font-bold text-gray-800 text-center">Editar Perfil</h2>
+                <div className="space-y-4">
+                    <label className="block">
+                        <span className="text-sm font-semibold text-gray-500">Nombre</span>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="text-sm font-semibold text-gray-500">Apellido</span>
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="text-sm font-semibold text-gray-500">Correo Electrónico</span>
+                        <input
+                            type="email"
+                            value={currentUser?.email || ''}
+                            readOnly
+                            className="mt-1 block w-full px-3 py-2 bg-gray-200 border border-gray-300 rounded-md shadow-sm cursor-not-allowed"
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="text-sm font-semibold text-gray-500">Teléfono</span>
+                        <input
+                            type="tel"
+                            name="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </label>
+                    <label className="block">
+                        <span className="text-sm font-semibold text-gray-500">UID</span>
+                        <input
+                            type="text"
+                            value={currentUser?.uid || ''}
+                            readOnly
+                            className="mt-1 block w-full px-3 py-2 bg-gray-200 border border-gray-300 rounded-md shadow-sm cursor-not-allowed"
+                        />
+                    </label>
+                </div>
+                <div className="flex justify-between space-x-4">
+                    <button
+                        onClick={() => setIsEditing(false)}
+                        className="flex-1 bg-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleSaveChanges}
+                        className="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                    >
+                        Guardar Cambios
+                    </button>
                 </div>
             </div>
         </div>
     );
-}
+};
+
+export default UserProfile;

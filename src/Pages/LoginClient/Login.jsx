@@ -1,10 +1,20 @@
-// src/Pages/AuthPage.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router'; // Cambiado a react-router-dom
-import { login, register } from '../../libs/axios/auth';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
-export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true); // true para login, false para registro
+// Inicializamos Firebase fuera del componente, pero solo si no existe ya
+let app;
+if (!getApps().length) {
+  const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+  app = initializeApp(firebaseConfig);
+}
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export default function App() {
+  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,7 +24,19 @@ export default function AuthPage() {
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const navigate = useNavigate();
+
+  // Usamos onAuthStateChanged para escuchar el estado de autenticación
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // El usuario está autenticado o no. Esto es mucho más seguro que intentar un signIn.
+      setAuthReady(true);
+    });
+
+    // Limpiamos el observador cuando el componente se desmonta
+    return () => unsubscribe();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,32 +48,43 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const { data, status } = await login({
-        email: formData.email,
-        password: formData.password
-      });
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      console.log('Inicio de sesión exitoso!');
+      console.log('Objeto de usuario de Firebase:', userCredential.user);
 
-      // Asumiendo que tu backend devuelve un token JWT y un objeto 'user' con 'role_id'
-      const { token, message: successMessage, user } = data; // Desestructuramos 'user' también
-      localStorage.setItem('authToken', token);
-      // Almacenamos el role_id del usuario en localStorage
-      if (user && user.role_id) {
-        localStorage.setItem('userRole', user.role_id.toString()); // Guarda como string
+      // Aquí puedes ver los datos del usuario recién autenticado
+      const user = auth.currentUser;
+      if (user) {
+        console.log('Datos del usuario actual (currentUser):', {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName, // El nombre y apellido que se guardó al registrarse
+          emailVerified: user.emailVerified
+        });
       }
-      setMessage(successMessage || '¡Inicio de sesión exitoso!');
 
       navigate('/');
-      window.location.reload();
-
     } catch (error) {
       console.error('Error durante el inicio de sesión:', error);
-      if (error.response) {
-        setMessage(error.response.data.message || 'Error al iniciar sesión. Verifica tus credenciales.');
-      } else if (error.request) {
-        setMessage('No se pudo conectar con el servidor. Intenta de nuevo.');
-      } else {
-        setMessage('Error desconocido al iniciar sesión.');
+      let errorMessage = "Error al iniciar sesión. Por favor, verifica tus credenciales.";
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          errorMessage = "Credenciales incorrectas. Verifica tu email y contraseña.";
+          break;
+        case 'auth/user-not-found':
+          errorMessage = "No se encontró un usuario con ese email.";
+          break;
+        case 'auth/wrong-password':
+          errorMessage = "La contraseña es incorrecta.";
+          break;
+        case 'auth/invalid-email':
+          errorMessage = "El formato del email no es válido.";
+          break;
+        default:
+          errorMessage = "Ha ocurrido un error inesperado. Inténtalo de nuevo.";
+          break;
       }
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -63,31 +96,64 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const { data, status } = await register({
-        name: formData.name,
-        lastname: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      await updateProfile(user, {
+        displayName: `${formData.name} ${formData.lastName}`
       });
 
-      setMessage(data.message || '¡Registro exitoso! Ya puedes iniciar sesión.');
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const userId = user.uid; // Usamos el ID del usuario recién creado
+
+      // Datos que se guardarán en Firestore
+      const userDataToSave = {
+        uid: user.uid,
+        name: formData.name,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        email: formData.email,
+        role: 'user',
+        createdAt: new Date()
+      };
+
+      console.log('Datos del usuario que se enviarán a Firestore:', userDataToSave);
+
+      await setDoc(doc(db, `/artifacts/${appId}/users/${userId}/profile`, user.uid), userDataToSave);
+
+      setMessage('¡Registro exitoso! Ya puedes iniciar sesión.');
       setIsLogin(true);
       setFormData({ ...formData, password: '', name: '', lastName: '', phone: '' });
-
     } catch (error) {
       console.error('Error durante el registro:', error);
-      if (error.response) {
-        setMessage(error.response.data.message || 'Error al registrar. Intenta con otro correo o revisa los datos.');
-      } else if (error.request) {
-        setMessage('No se pudo conectar con el servidor. Intenta de nuevo.');
-      } else {
-        setMessage('Error desconocido al registrar.');
+      let errorMessage = "Error al registrar. Por favor, revisa tus datos.";
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = "El email proporcionado ya está en uso por otra cuenta.";
+          break;
+        case 'auth/invalid-email':
+          errorMessage = "El formato del email no es válido.";
+          break;
+        case 'auth/weak-password':
+          errorMessage = "La contraseña debe tener al menos 6 caracteres.";
+          break;
+        default:
+          errorMessage = "Ha ocurrido un error inesperado. Inténtalo de nuevo.";
+          break;
       }
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <p>Cargando autenticación...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F5EE] flex items-center justify-center p-4">
@@ -97,14 +163,12 @@ export default function AuthPage() {
         </h2>
 
         {message && (
-          <div className={`p-3 mb-4 rounded-md text-center ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-            }`}>
+          <div className={`p-3 mb-4 rounded-md text-center ${message.includes('Error') || message.includes('incorrecta') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
             {message}
           </div>
         )}
 
         <form onSubmit={isLogin ? handleLogin : handleRegister} className="space-y-4">
-          {/* Campos de Nombre, Apellido y Teléfono: SOLO VISIBLES EN MODO REGISTRO */}
           {!isLogin && (
             <>
               <div>
@@ -115,7 +179,7 @@ export default function AuthPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
+                  required={!isLogin}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -127,7 +191,7 @@ export default function AuthPage() {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  required
+                  required={!isLogin}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -145,7 +209,6 @@ export default function AuthPage() {
             </>
           )}
 
-          {/* Campos de Email y Contraseña: VISIBLES EN AMBOS MODOS */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email:</label>
             <input
@@ -155,6 +218,7 @@ export default function AuthPage() {
               value={formData.email}
               onChange={handleChange}
               required
+              autoComplete="email"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
@@ -167,6 +231,7 @@ export default function AuthPage() {
               value={formData.password}
               onChange={handleChange}
               required
+              autoComplete="current-password"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
