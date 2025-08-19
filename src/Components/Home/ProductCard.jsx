@@ -1,5 +1,9 @@
 import { Link } from "react-router"
+import { useCart } from '../../Components/General/CartContext'; // Importa el hook
+
 export default function ProductCard({ product }) {
+  // Obtiene la función addToCart del contexto
+  const { addToCart } = useCart();
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105">
@@ -21,8 +25,13 @@ export default function ProductCard({ product }) {
         <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">{product.name}</h3>
         <p className="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">{product.description}</p>
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-[#a40202]">{product.price}</span>
-          <button className="bg-[#431f0a] hover:bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 flex items-center space-x-1">
+          {/* Asume que el precio viene en el objeto product */}
+          <span className="text-2xl font-bold text-[#a40202]">${product.price}.00</span>
+          {/* Conecta la función addToCart al evento onClick */}
+          <button
+            onClick={() => addToCart(product)}
+            className="bg-[#431f0a] hover:bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 flex items-center space-x-1"
+          >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>

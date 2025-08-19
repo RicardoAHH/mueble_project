@@ -1,19 +1,15 @@
 import { Link } from "react-router";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from '../../App'; // La importación ahora es un nivel superior
+import { useCart } from '../../Components/General/CartContext'; // Importa el hook para el carrito
 
 export default function Header() {
   const { currentUser, userProfile, handleLogout } = useAuth();
+  const { cartItems, cartItemCount, cartTotalPrice, removeFromCart, incrementQuantity, decrementQuantity } = useCart();
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  // Nuevo estado para controlar la visibilidad del carrito flotante
   const [isCartOpen, setIsCartOpen] = useState(false);
-  // Estado simulado para el carrito
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: "Silla de comedor 'Minimal'", price: 120, quantity: 1 },
-    { id: 2, name: "Mesa de centro 'Roble'", price: 250, quantity: 1 },
-    { id: 3, name: "Lámpara de pie 'Industrial'", price: 85, quantity: 1 },
-  ]);
 
   // Refs para los menús y el carrito
   const menuRef = useRef(null);
@@ -34,10 +30,6 @@ export default function Header() {
   const toggleCart = () => {
     setIsCartOpen(!isCartOpen);
   };
-
-  // Calcula el total de artículos en el carrito
-  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const cartTotalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
   // Efecto para manejar clics fuera de los menús y el carrito
   useEffect(() => {
@@ -258,7 +250,18 @@ export default function Header() {
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>
                       </div>
-                      <p className="font-semibold">${item.price * item.quantity}.00</p>
+                      <div className="flex items-center space-x-2">
+                        {/* Botones para modificar la cantidad */}
+                        <button onClick={() => decrementQuantity(item.id)} className="text-gray-500 hover:text-gray-800">-</button>
+                        <p className="font-semibold">${item.price * item.quantity}.00</p>
+                        <button onClick={() => incrementQuantity(item.id)} className="text-gray-500 hover:text-gray-800">+</button>
+                        {/* Botón para eliminar */}
+                        <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-800">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

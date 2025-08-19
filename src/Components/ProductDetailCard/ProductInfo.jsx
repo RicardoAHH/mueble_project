@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useCart } from '../../Components/General/CartContext'; // Importa el hook
 
 // Acepta la prop 'product' que viene del componente padre
 export default function ProductInfo({ product }) {
@@ -6,10 +7,12 @@ export default function ProductInfo({ product }) {
     if (!product) {
         return null;
     }
+    const { addToCart } = useCart();
 
     // Puedes usar estados para manejar la selección de acabado y la cantidad si estos son interactivos
     const [selectedFinish, setSelectedFinish] = useState('Acabado Predeterminado');
     const [quantity, setQuantity] = useState(1);
+    console.log(quantity);
 
     return (
         <div className="product-info-container w-[100%] bg-white p-6 md:p-8 rounded-lg shadow-xl mx-auto">
@@ -106,7 +109,9 @@ export default function ProductInfo({ product }) {
                         +
                     </button>
                 </div>
-                <button className="flex-1 bg-[#431f0a] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105 w-full sm:w-auto">
+                <button
+                    onClick={() => addToCart(product, quantity)}
+                    className="flex-1 bg-[#431f0a] hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition duration-300 ease-in-out transform hover:scale-105 w-full sm:w-auto">
                     Agregar al Carrito
                 </button>
             </div >

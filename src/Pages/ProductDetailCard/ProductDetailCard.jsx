@@ -55,9 +55,7 @@ export default function ProductDetailCard() {
     const currentProductId = data?.id; // Para excluir el producto actual de las sugerencias
     const currentProductCategoryId = data?.category_id; // <-- Esta es la clave
 
-    console.log("ProductDetailCard data:", data);
-    console.log("ProductDetailCard images:", images);
-    console.log("ProductDetailCard currentProductCategoryId:", currentProductCategoryId);
+
 
     return (
         <>
