@@ -10,7 +10,8 @@ mercadopago.configure({
 });
 
 // La función principal que Vercel ejecutará
-export default async function createPreference(req, res) {
+// Se exporta usando la sintaxis de CommonJS (module.exports) para evitar conflictos.
+module.exports = async (req, res) => {
     // Código de depuración para verificar la variable de entorno.
     console.log("Valor de la variable MERCADOPAGO_ACCESS_TOKEN:", process.env.MERCADOPAGO_ACCESS_TOKEN ? "Cargado" : "No encontrado");
 
@@ -56,4 +57,4 @@ export default async function createPreference(req, res) {
         console.error('Error al crear la preferencia de pago:', error);
         res.status(500).json({ error: 'Error interno del servidor al procesar el pago.' });
     }
-}
+};
