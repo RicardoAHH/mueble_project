@@ -11,6 +11,9 @@ mercadopago.configure({
 
 // La función principal que Vercel ejecutará
 export default async function createPreference(req, res) {
+    // Código de depuración para verificar la variable de entorno.
+    console.log("Valor de la variable MERCADOPAGO_ACCESS_TOKEN:", process.env.MERCADOPAGO_ACCESS_TOKEN ? "Cargado" : "No encontrado");
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Método no permitido' });
     }
