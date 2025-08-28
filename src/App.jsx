@@ -26,6 +26,9 @@ import UserProfile from './Pages/UserProfile/UserProfile';
 import { CartProvider } from '../src/Components/General/CartContext';
 import CartPage from './Pages/CartPage/CartPage';
 import CheckoutPage from './Pages/CheckoutPage/CheckoutPage';
+import SuccessPage from './Pages/SuccesPage/SuccessPage';
+import FailurePage from './Pages/Failure/FailurePage';
+import PendingPage from './Pages/Pending/PendingPage';
 
 // Inicialización de Firebase
 let firebaseApp;
@@ -137,6 +140,10 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/failure" element={<FailurePage />} />
+          <Route path="/pending" element={<PendingPage />} />
+          {/* Ruta protegida para el panel de administración */}
           <Route
             path="/26062025/admin"
             element={

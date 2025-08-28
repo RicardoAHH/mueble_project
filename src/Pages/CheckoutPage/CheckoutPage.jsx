@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+// La ruta es relativa al archivo donde se encuentra, por lo que se ajustó para la correcta importación.
 import { useCart } from '../../Components/General/CartContext';
 
-// Íconos de PayPal y Mercado Pago
+// ===================================
+// COMPONENTE PRINCIPAL DE CHECKOUT
+// ===================================
+
 const PaypalIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38 38" className="h-6 w-auto mr-2"><path fill="#003087" d="M10.824 23.957a.382.382 0 0 1-.295-.164l-2.905-5.023a.473.473 0 0 1-.035-.121c-.046-.226.06-.475.295-.58l1.411-.531a.486.486 0 0 1 .58.295l2.766 5.013a.465.465 0 0 1-.031.479c-.218.232-.44.225-.916.035zM35.61 16.591a.916.916 0 0 0-.825-.662h-4.664c-1.396 0-2.422.846-3.166 1.905-1.285 1.815-2.029 3.829-2.029 5.833 0 .428.164.717.652.717.375 0 .58-.291.874-.485 1.096-.697 2.112-1.266 3.193-1.891a.576.576 0 0 0 .232-.676c-.035-.121-.295-.536-.714-.734-.236-.111-.531-.226-.846-.309-1.332-.34-2.812-.647-4.238-.802-.977-.119-1.954-.251-2.914-.401-.84-.131-1.687-.27-2.527-.424a.525.525 0 0 1-.366-.546c.105-.41.34-.842.697-1.189.921-1.077 2.174-1.916 3.754-2.316.517-.13.916-.145 1.25-.138 2.086 0 3.29.625 4.381 1.636 1.157 1.076 1.722 2.652 1.94 4.507.031.333.15.697.15.931 0 .226-.113.34-.337.34-.65 0-1.328-.518-2.029-1.036-.316-.217-.677-.42-1.058-.618a.332.332 0 0 0-.464.062c-.105.155-.309.431-.482.721-.351.583-.69.967-1.036 1.487z" />
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38 38" className="h-6 w-auto mr-2"><path fill="#003087" d="M10.824 23.957a.382.382 0 0 1-.295-.164l-2.905-5.023a.473.473 0 0 1-.035-.121c-.046-.226.06-.475.295-.58l1.411-.531a.486.486 0 0 1 .58.295l2.766 5.013a.465.465 0 0 1-.031.479c-.218.232-.44.225-.916.035zM35.61 16.591a.916.916 0 0 0-.825-.662h-4.664c-1.396 0-2.422.846-3.166 1.905-1.285 1.815-2.029 3.829-2.029 5.833 0 .428.164.717.652.717.375 0 .58-.291.874-.485 1.096-.697 2.112-1.266 3.193-1.891a.576.576 0 0 0 .232-.676c-.035-.121-.295-.536-.714-.734-.236-.111-.531-.226-.846-.309-1.332-.34-2.812-.647-4.238-.802-.977-.119-1.954-.251-2.914-.401-.84-.131-1.687-.27-2.527-.424a.525.525 0 0 1-.366-.546c.105-.41.34-.842.697-1.189.921-1.077 2.174-1.916 3.754-2.316.517-.13.916-.145 1.25-.138 2.086 0 3.29.625 4.381 1.636 1.157 1.076 1.722 2.652 1.94 4.507.031.333.15.697.15.931 0 .226-.113.34-.337.34-.65 0-1.328-.518-2.029-1.036-.316-.217-.677-.42-1.058-.618a.332.332 0 0 0-.464.062c-.105.155-.309.431-.482.721-.351.583-.69.967-1.036 1.487z" /></svg>
 );
 
 const MercadoPagoIcon = () => (
@@ -33,7 +36,6 @@ export default function CheckoutPage() {
         setError('');
         setLoading(true);
 
-        // Validar campos obligatorios
         const requiredFields = ['name', 'email', 'address', 'city', 'zip', 'phone'];
         const isFormValid = requiredFields.every(field => formData[field].trim() !== '');
 
@@ -44,31 +46,42 @@ export default function CheckoutPage() {
         }
 
         try {
-            // Llamada a la función serverless que creamos en Vercel
-            const response = await fetch('/api/create-preference', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paymentMethod: paymentMethod, // ¡Asegúrate de enviar el método de pago!
-                    cartItems: cartItems.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.quantity
-                    })),
-                    shippingInfo: formData
-                })
-            });
+            // Se usa un switch para manejar diferentes métodos de pago
+            switch (paymentMethod) {
+                case 'mercadopago': {
+                    const response = await fetch('http://localhost:3000/api/create_preference', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            cartItems: cartItems.map(item => ({
+                                id: item.id,
+                                name: item.name,
+                                price: item.price,
+                                quantity: item.quantity,
+                                images: item.images
+                            })),
+                            shippingInfo: formData
+                        })
+                    });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al crear la orden de pago.');
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Error al crear la orden de pago con Mercado Pago.');
+                    }
+
+                    const data = await response.json();
+                    window.location.href = data.init_point;
+                    break;
+                }
+                case 'paypal':
+                    // TODO: Aquí iría la lógica para procesar el pago con PayPal
+                    // Esto es un placeholder para mostrar cómo se manejarían múltiples pasarelas
+                    console.log('Lógica de pago con PayPal - EN CONSTRUCCIÓN');
+                    alert('La funcionalidad de PayPal aún no está implementada.');
+                    break;
+                default:
+                    throw new Error('Método de pago no soportado.');
             }
-
-            const data = await response.json();
-
-            // Redirigir al usuario a la pasarela de pago
-            window.location.href = data.redirectUrl;
 
         } catch (err) {
             console.error('Error al procesar el pago:', err);
@@ -81,7 +94,6 @@ export default function CheckoutPage() {
     return (
         <div className="container mx-auto px-4 py-28">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">Proceder al Pago</h1>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-lg shadow-xl p-6 md:p-10">
@@ -103,9 +115,7 @@ export default function CheckoutPage() {
                                 </div>
                             ))}
                         </div>
-
                         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm" role="alert">{error}</div>}
-
                         <h2 className="text-2xl font-bold text-gray-800 mb-6 mt-8">Elige tu Método de Pago</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                             <button
@@ -127,7 +137,6 @@ export default function CheckoutPage() {
                         </div>
                     </div>
                 </div>
-
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg shadow-xl p-6">
                         <h2 className="text-2xl font-bold text-gray-800 mb-6">Resumen del Pedido</h2>
